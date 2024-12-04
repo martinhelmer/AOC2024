@@ -3,6 +3,7 @@ module BSArray (BSArray
                , rows
                , cols
                , row
+               , indices
                , BSArray.lookup
                , makeBSarray
                , lookupMaybe
@@ -63,7 +64,7 @@ lookupMaybe a@(BSArray s (Row rows') (Col cols')) (ir, ic)
     | ir < 0 || ir >= rows' || ic < 0 || ic >= cols' = Nothing
     | otherwise = Just (B.index s (ic + ir * (cols' +1)))
 
-rawIndex2Index :: BSArray -> Int -> (Int, Int)
+rawIndex2Index :: BSArray -> Int -> Index
 rawIndex2Index bs ix = (ix `div` (cols bs + 1 ), ix `rem` (cols bs + 1 ))
 
 
@@ -83,6 +84,11 @@ intIndex bs (row', col) = (cols bs * row') + col
 rawIndex :: BSArray -> Index -> Int
 rawIndex bs (row', col) = ((cols bs +1 ) * row') + col
 
+length' :: BSArray -> Int 
+length' bs = B.length (contents bs )
+
+indices :: BSArray -> [Index]
+indices bs = [(r,c) | r <- [0.. (rows bs -1)]  , c <- [0..(cols bs -1)]]
 
 row :: BSArray -> Int -> ByteString
 row bs rownum = let cols' = cols bs in
