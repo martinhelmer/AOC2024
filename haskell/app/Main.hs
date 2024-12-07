@@ -19,6 +19,10 @@ import RunUtil (RunMe(..), exec)
 
 import Day01 
 import Day02 
+import Day03
+import Day04 
+import Day05 
+import Day06
 
 type RunResult = ((Double, Integer), (Double, Integer))
 type Runner = RunMe-> IO RunResult
@@ -30,6 +34,14 @@ rmap = M.fromList
     , ("_01", Day01.runex)
     , ("02", Day02.runme)
     , ("_02", Day02.runex)
+    , ("03", Day03.runme)
+    , ("_03", Day03.runex)
+    , ("04", Day04.runme)
+    , ("_04", Day04.runex)
+    , ("05", Day05.runme)
+    , ("_05", Day05.runex)
+    , ("06", Day06.runme)
+    , ("_06", Day06.runex)
     ]
 
 numruns :: Int
@@ -43,7 +55,7 @@ mySort = sortBy (compare `on` fst)
 
 sToR :: String -> IO ()
 sToR "ALL" = do
-        -- _ <- doit (runmany 1) [Day01c.runme] showNothing
+        _ <- doit (runmany 1) [Day03.runme] showNothing
         TI.putStrLn "Haskell AOC 2024                         |  1    (micros)    2 |   1 + 2  |"
         TI.putStrLn "-----------------------------------------+----------+----------+----------+--"
         doit (runmany numruns) (map snd . filter (\t -> '_' `notElem` fst t ) . mySort . M.assocs $ rmap) showTabular

@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 module BSArray (BSArray
+               , updateLoc
                , rows
                , cols
                , row
@@ -8,7 +9,7 @@ module BSArray (BSArray
                , makeBSarray
                , lookupMaybe
                , BSArray.elemIndex
-               , BSArray.elemIndices
+               , elemIndices
                , intIndex
                , stringColsFromLeft
                , bsColsFromLeft
@@ -18,8 +19,9 @@ module BSArray (BSArray
                ) where
 import Data.ByteString (ByteString)
 import Data.Hashable
-import PosDir 
 import qualified Data.ByteString.Char8 as B
+import Data.ByteString.Char8(append, singleton, take, drop)
+import Prelude hiding (take, drop)
 
 type Index = (Int, Int)
 
@@ -39,7 +41,6 @@ instance  Hashable BSArray where
     hashWithSalt i (BSArray bs _ _ ) = hashWithSalt i bs
 
 
-
 rows :: BSArray -> Int
 rows (BSArray _ (Row rows') (Col _)) = rows'
 
@@ -53,6 +54,11 @@ makeBSarray s = BSArray s (Row rows') (Col cols')
             (Nothing, _) -> (B.length s, 1)
             (Just l ,True)  -> (l, B.length s `div` (l+1))
             (Just l, False) -> (l, (B.length s+1) `div` (l+1))
+
+updateLoc :: BSArray -> Index -> Char -> BSArray
+updateLoc bsa ix c = makeBSarray $ take (ix') bs `append ` singleton c `append` drop (ix'+1) bs
+        where ix' = rawIndex bsa ix
+              bs = contents bsa
 
 lookup :: BSArray -> Index ->  Char
 lookup (BSArray s _ (Col cols')) (ir, ic) | ir < 0 = error "Negative row index!"
@@ -70,10 +76,7 @@ rawIndex2Index bs ix = (ix `div` (cols bs + 1 ), ix `rem` (cols bs + 1 ))
 
 -- refactor (switch arguments to conform to haskell standard)
 elemIndex :: BSArray -> Char -> Maybe Index
-elemIndex bs c = case i of
-        Nothing -> Nothing
-        Just ix -> Just (rawIndex2Index bs ix)
-    where i = B.elemIndex c (contents bs)
+elemIndex bs c =rawIndex2Index bs <$> B.elemIndex c (contents bs)
 
 elemIndices :: Char -> BSArray -> [Index]
 elemIndices  c bs = map (rawIndex2Index bs) $ B.elemIndices c (contents bs)
@@ -84,7 +87,7 @@ intIndex bs (row', col) = (cols bs * row') + col
 rawIndex :: BSArray -> Index -> Int
 rawIndex bs (row', col) = ((cols bs +1 ) * row') + col
 
-length' :: BSArray -> Int 
+length' :: BSArray -> Int
 length' bs = B.length (contents bs )
 
 indices :: BSArray -> [Index]
