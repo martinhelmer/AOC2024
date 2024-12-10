@@ -11,7 +11,7 @@ module Day01 (runme, runex) where
 import Text.RawString.QQ
 import AOCHelper
 import Data.List (transpose, sort)
-import qualified Data.Map as M
+import qualified Data.IntMap as M
 import Data.Maybe ( fromMaybe, fromJust )
 
 import RunUtil (runMeString, RunMe)
@@ -45,7 +45,7 @@ example = [r|3   4
 ----------------------------
 
 
-frequencies :: [Int] -> M.Map Int Int
+frequencies :: [Int] -> M.IntMap Int
 frequencies = foldr (\x m -> M.insertWith (+) x 1 m) M.empty
 
 unzip' :: [[Int]] -> ([Int], [Int])

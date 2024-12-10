@@ -11,6 +11,7 @@ module Dayx (runme, runex) where
 import Text.RawString.QQ
 
 import Control.Applicative
+import qualified Data.Attoparsec.ByteString.Char8 as AP
 import Data.Attoparsec.ByteString.Char8 (
   Parser,
   decimal,
@@ -32,21 +33,12 @@ import qualified BSArray as BSA
 
 example :: ByteString
 example =
-  [r|.|...\....
-|.-.\.....
-.....|-...
-........|.
-..........
-.........\
-..../.\\..
-.-.-/..|..
-.|....-|.\
-..//.|....|]
+  [r||]
 
 runex :: RunMe
 runex =
   runMeByteString
-    "Day x - example"
+    "Day XX - example"
     (return example)
     part1
     (Nothing)
@@ -56,14 +48,16 @@ runex =
 runme :: RunMe
 runme =
   runMeByteString
-    "Day x: ..."
-    (readInpByteSTring "day0x.txt")
+    "Day XX: ..."
+    (readInpByteSTring "dayXX.txt")
     part1
     (Nothing)
     part2
     (Nothing)
 
 ---
+parse' :: Parser b -> ByteString -> b
+parse' p s = either (error . show) id $ AP.parseOnly (p <* AP.endOfInput) s
 
 part1 :: ByteString -> IO Integer
 part1  = undefined

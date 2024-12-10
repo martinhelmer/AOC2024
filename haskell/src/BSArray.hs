@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 module BSArray (BSArray
+               , Index
                , updateLoc
                , rows
                , cols
@@ -16,6 +17,7 @@ module BSArray (BSArray
                , unpackRows
                , rawIndex2Index
                , rawIndex
+               , inRange 
                ) where
 import Data.ByteString (ByteString)
 import Data.Hashable
@@ -65,9 +67,12 @@ lookup (BSArray s _ (Col cols')) (ir, ic) | ir < 0 = error "Negative row index!"
                                           | ic < 0 = error "Negative column index!"
                                           | otherwise = B.index s (ic + ir * (cols' +1))
 
+inRange :: BSArray -> Index -> Bool 
+inRange bsa (ir,ic) = not (ir < 0 || ir >= rows bsa || ic < 0 || ic >= cols bsa)
+
 lookupMaybe :: BSArray -> Index -> Maybe Char
 lookupMaybe a@(BSArray s (Row rows') (Col cols')) (ir, ic)
-    | ir < 0 || ir >= rows' || ic < 0 || ic >= cols' = Nothing
+    | not (inRange a (ir,ic))= Nothing
     | otherwise = Just (B.index s (ic + ir * (cols' +1)))
 
 rawIndex2Index :: BSArray -> Int -> Index
@@ -78,6 +83,8 @@ rawIndex2Index bs ix = (ix `div` (cols bs + 1 ), ix `rem` (cols bs + 1 ))
 elemIndex :: BSArray -> Char -> Maybe Index
 elemIndex bs c =rawIndex2Index bs <$> B.elemIndex c (contents bs)
 
+-- | /O(n)/ The 'elemIndices' function extends 'elemIndex', by returning
+-- the indices of all elements equal to the query element, in ascending order.
 elemIndices :: Char -> BSArray -> [Index]
 elemIndices  c bs = map (rawIndex2Index bs) $ B.elemIndices c (contents bs)
 

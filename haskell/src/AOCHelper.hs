@@ -1,14 +1,16 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE PackageImports #-}
 
 module AOCHelper where
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as UV
 import qualified Data.Map as M
+import qualified Data.HashMap as HM
 import qualified Data.Array as A
 
-import Data.Maybe
+import Data.Maybe ( fromMaybe )
 import           Data.List.Split
 import           Data.Int
 
@@ -19,10 +21,23 @@ import qualified Data.Foldable as S
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 
-import qualified Data.ByteString.Char8 as B
+import Data.Bifunctor ( Bifunctor(second) )
+import Data.Hashable (Hashable)
+
+pairs :: [a] -> [(a,a)]
+pairs [] = []
+pairs [_] = undefined
+pairs [x,y] = [(x,y)]
+pairs (x:xs) = map (x,) xs ++ pairs xs
 
 mapInsert:: (Ord a) => M.Map a b -> [(a,b)] -> M.Map a b
 mapInsert = foldl (\r (a,b) -> M.insert a b r)
+
+hashmapCollect:: (Ord k,Semigroup a, Hashable k) => (b -> a) -> [(k, b)] -> HM.Map k a
+hashmapCollect puure = HM.fromListWith (<>) . map (second puure) 
+
+mapCollect:: (Ord k, Semigroup a) => (b -> a) -> [(k, b)] -> M.Map k a
+mapCollect puure = M.fromListWith (<>) . map (second puure) 
 
 
 readInp :: [Char] -> IO String
@@ -136,5 +151,5 @@ minimumOn f = minimumBy (compare `on` f)
 type Pos = (Int, Int)
 type Dir = (Int, Int)
 
-tp:: Pos -> Dir -> Pos 
-tp (a,b) (c,d) = (a+c, b+d) 
+tp:: Pos -> Dir -> Pos
+tp (a,b) (c,d) = (a+c, b+d)
