@@ -71,10 +71,10 @@ runme =
 stepUp :: BSArray -> (Index, Char) -> [(Index, Char)]
 stepUp grid (p,c) = mapMaybe ll locs
         where locs = map (p .+.) [(0,1), (0,-1), (1,0), (-1,0)]
-              ll p =
-                case BSA.lookupMaybe grid p of
+              ll p' =
+                case BSA.lookupMaybe grid p' of
                         Nothing -> Nothing
-                        Just c' -> if c' == succ c then Just (p, c') else Nothing
+                        Just c' -> if c' == succ c then Just (p', c') else Nothing
 
 peaks :: BSArray -> (Index, Char) -> [Index]
 peaks grid (p, c) | c == '9' = [p]

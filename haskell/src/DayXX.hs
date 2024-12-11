@@ -6,7 +6,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
 
-module Dayx (runme, runex) where
+module DayXX (runme, runex) where
 
 import Text.RawString.QQ
 

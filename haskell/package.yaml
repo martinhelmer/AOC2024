@@ -39,11 +39,11 @@ dependencies:
 - pretty-terminal
 - raw-strings-qq
 - fgl 
-- unordered-containers
 - parallel
 - deepseq 
 - heaps 
 - containers
+- hashmap
 
 
 ghc-options:

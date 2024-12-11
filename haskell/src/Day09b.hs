@@ -5,6 +5,7 @@
 {-# OPTIONS_GHC -Wno-unused-imports #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
+{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 
 module Day09b (runme, runex) where
 
@@ -49,7 +50,7 @@ runex =
 runme :: RunMe
 runme =
   runMeByteString
-    "--- Day 9b: Disk Fragmenter Vec ---"
+    "--- Day 9b: Disk Fragmenter (Vec) ---"
     (readInpByteSTring "day09.txt")
     part1
     (Just 6471961544878)
@@ -86,9 +87,9 @@ foldit ((ix, next):xs) ft@((ix2, n2):t)
 part1 :: ByteString -> IO Integer
 part1 s = do
     let q = zip [0..] (readinp (BS.unpack s) 0)
-    let rev = map (\(i, Num n) -> (i, n)) . reverse $ filter (\(_, q) -> q /= Gup) q
-    let s = foldit q rev
-    (return . toInteger . sum) (zipWith ((*)) [0..] s)
+    let rev = map (\(i, Num n) -> (i, n)) . reverse $ filter (\(_, file) -> file /= Gup) q
+    let s' = foldit q rev
+    (return . toInteger . sum) (zipWith ((*)) [0..] s')
 
 -- 
 type ID = Int
