@@ -17,12 +17,27 @@ import           Data.Int
 import Data.Foldable
 import Data.Function (on)
 import qualified Data.ByteString as BS
-import qualified Data.Foldable as S
+import qualified Data.Set as S
+import qualified Data.Foldable as F
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 
 import Data.Bifunctor ( Bifunctor(second) )
 import Data.Hashable (Hashable)
+
+-- squareRoot = floor . sqrt . fromIntegral
+
+squareRoot :: Integral t => t -> t
+squareRoot n
+   | n > 0    = babylon n
+   | n == 0   = 0
+   | n < 0    = error "Negative input"
+   | otherwise = error "Weird"
+   where
+   babylon a   | a > b  = babylon b
+               | otherwise   = a
+      where b  = quot (a + quot n a) 2
+
 
 pairs :: [a] -> [(a,a)]
 pairs [] = []
@@ -117,7 +132,7 @@ mapBounds a = ((x1,y1),(x2,y2))
 
 
 draw2dset :: (Foldable t) => t (Int, Int) -> String
-draw2dset s = draw2dmap ( M.fromList $ map (,1::Int) (S.toList s))
+draw2dset s = draw2dmap ( M.fromList $ map (,1::Int) (F.toList s))
 
 
 draw2dmap ::  M.Map (Int, Int) Int -> String
@@ -131,6 +146,10 @@ draw2dcharmap m = map (\c -> if c =='#' then '\x2588' else c) $ unlines $ chunks
 
 draw2dchararr ::  A.Array (Int, Int) Char -> [Char]
 draw2dchararr a = draw2dcharmap ( M.fromList $ map (\((y,x),v) -> ((x,y),v)) $ A.assocs a)
+
+drawSparse :: (Int, Int) -> [(Int,Int)] -> [Char]
+drawSparse (rows, cols) l = unlines . chunksOf cols . map (\c -> if S.member c s then '#' else '.') $ (,) <$> [0..(rows-1)] <*> [0..(cols-1)]
+    where s= S.fromList l 
 
 intDispl ::  Int -> Char
 intDispl 1 = '\x2588'
@@ -153,3 +172,9 @@ type Dir = (Int, Int)
 
 tp:: Pos -> Dir -> Pos
 tp (a,b) (c,d) = (a+c, b+d)
+
+
+splitOnBs :: BS.ByteString -> BS.ByteString -> [BS.ByteString]
+splitOnBs x y = h : if BS.null t then [] else splitOnBs x (BS.drop (BS.length x) t)
+    where (h,t) = BS.breakSubstring x y
+    

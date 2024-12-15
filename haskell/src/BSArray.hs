@@ -18,12 +18,14 @@ module BSArray (BSArray
                , rawIndex2Index
                , rawIndex
                , inRange 
+               , toMap
                ) where
 import Data.ByteString (ByteString)
 import Data.Hashable
 import qualified Data.ByteString.Char8 as B
 import Data.ByteString.Char8(append, singleton, take, drop)
 import Prelude hiding (take, drop)
+import qualified Data.Map as M 
 
 type Index = (Int, Int)
 
@@ -62,6 +64,9 @@ updateLoc bsa ix c = makeBSarray $ take (ix') bs `append ` singleton c `append` 
         where ix' = rawIndex bsa ix
               bs = contents bsa
 
+unsafeLookup :: BSArray -> Index ->  Char
+unsafeLookup (BSArray s _ (Col cols')) (ir, ic) = B.index s (ic + ir * (cols' +1))
+
 lookup :: BSArray -> Index ->  Char
 lookup (BSArray s _ (Col cols')) (ir, ic) | ir < 0 = error "Negative row index!"
                                           | ic < 0 = error "Negative column index!"
@@ -99,6 +104,9 @@ length' bs = B.length (contents bs )
 
 indices :: BSArray -> [Index]
 indices bs = [(r,c) | r <- [0.. (rows bs -1)]  , c <- [0..(cols bs -1)]]
+
+toMap :: BSArray -> M.Map Index Char 
+toMap bs = M.fromList . map (\ix -> (ix, unsafeLookup bs ix)) . indices $ bs 
 
 row :: BSArray -> Int -> ByteString
 row bs rownum = let cols' = cols bs in

@@ -89,13 +89,13 @@ collectAntennas bs =
     $ bs
 
 go :: Monad m => ByteString -> Resonance -> m Integer
-go s r = do 
+go s res = do 
       let bs = BSA.makeBSarray s
       return
         . toInteger 
         . length 
         . nubOrd 
-        . concatMap (concatMap (uncurry (antinodes bs r)) . pairs) 
+        . concatMap (concatMap (uncurry (antinodes bs res)) . pairs) 
         . M.elems 
         . collectAntennas 
         $ bs 

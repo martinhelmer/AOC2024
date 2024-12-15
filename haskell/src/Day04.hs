@@ -95,9 +95,10 @@ part2 = go [[(-1, -1), (1,1), (1,-1), (-1,1)]]
            (\[a,b,c,d] -> ((a,b) == ('S','M') || (a,b) == ('M','S')) && ((c,d) == ('S','M') || (c,d) == ('M','S')))
            'A'
 
-part3 s = do
-  print (head . sort . map compute $ collectsums 6 384 tl)
-  return 0
+-- part3 :: Num b => p -> IO b
+-- part3 s = do
+--   print (head . sort . map compute $ collectsums 6 384 tl)
+--   return 0
 
 
 tl :: [Int]

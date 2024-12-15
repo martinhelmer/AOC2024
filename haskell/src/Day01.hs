@@ -1,8 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns -Wunused-top-binds #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Use bimap" #-}
 {-# LANGUAGE BangPatterns #-}
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 
@@ -10,9 +7,9 @@ module Day01 (runme, runex) where
 
 import Text.RawString.QQ
 import AOCHelper
-import Data.List (transpose, sort)
+import Data.List (sort)
 import qualified Data.IntMap as M
-import Data.Maybe ( fromMaybe, fromJust )
+import Data.Maybe ( fromMaybe )
 
 import RunUtil (runMeString, RunMe)
 runme :: RunMe

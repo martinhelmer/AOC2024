@@ -4,6 +4,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
 {-# HLINT ignore "Use tuple-section" #-}
+{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 
 module Day06 (runme, runex) where
 
@@ -80,7 +81,7 @@ part1 :: ByteString -> IO Integer
 part1 s  = do
     let bsa = BSA.makeBSarray s
     let sp = Pos (fromJust $ BSA.elemIndex bsa '^') NORTH
-    return (toInteger . length . nubOrd . map (\(Just (Pos p d)) -> p) . takeWhile (isJust) $ iterate (>>= (dosmallstep bsa Nothing )) (Just sp) )
+    return (toInteger . length . nubOrd . map (\(Just (Pos p _)) -> p) . takeWhile (isJust) $ iterate (>>= (dosmallstep bsa Nothing )) (Just sp) )
 
 hasLoop :: BSArray -> Visited -> Pos -> Loc  -> Bool
 hasLoop bsa v sp l =  hasLoop' v (Just sp)

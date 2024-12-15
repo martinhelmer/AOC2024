@@ -1,13 +1,17 @@
 {-# OPTIONS_GHC -Wno-unused-imports #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module PosDir ((.+.), (.-.), (.*->.), (.->.) , fromPos, toPos, rl, rr, Loc(..), Dir(..), Pos(..), mhdist, step, loc, pos2int, loc2int)
+
+module PosDir ((.+.), (.-.), (.*->.), (.->.) , fromPos,
+               toPos, rl, rr, Loc(..), Dir(..), Pos(..), mhdist, step, loc, pos2int, loc2int, int2loc,
+               cardinalDirections, opposite)
 where
 
 import Data.Bifunctor (bimap)
 import Control.DeepSeq (NFData)
 import Data.Hashable (Hashable (..))
 import Data.List.Split.Internals (fromElem)
+import AOCHelper (squareRoot)
 
 data Orientation = Vertical | Horizontal deriving (Show, Ord, Eq, Enum)
 
@@ -24,17 +28,29 @@ type Loc =  (Int, Int)
 data Dir = NORTH | EAST | SOUTH | WEST deriving (Eq, Show, Enum, Ord)
 data Pos = Pos !Loc !Dir deriving (Eq, Show, Ord)
 
+cardinalDirections :: [Dir]
+cardinalDirections = [NORTH, EAST, SOUTH, WEST]
+
 loc :: Pos -> Loc
 loc (Pos l _) = l
 
 pos2int :: Pos -> Int
-pos2int (Pos (x,y) d) = 4 * loc2int (x,y)  + fromEnum d 
+pos2int (Pos (x,y) d) = 4 * loc2int (x,y)  + fromEnum d
 
 loc2int :: Integral a => (a, a) -> a
-loc2int (x,y) = let s = x + y in ((s * (s +1)) `div` 2 + y) 
+loc2int (x,y) = let s = x + y in ((s * (s +1)) `div` 2 + y)
+
+int2loc :: Int -> (Int, Int)
+int2loc n = (rem -y, y)
+    where rem = ((squareRoot (1 + 8 * n ) + 1) `div` 2 ) -1
+          y = n - ((rem * (rem + 1)) `div` 2)
+
 
 instance Hashable Pos where
-  hashWithSalt s p = s + hash (pos2int p) 
+  hashWithSalt s p = s + hash (pos2int p)
+
+opposite :: Dir -> Dir
+opposite = rl . rl
 
 rl :: Dir -> Dir
 rl NORTH = WEST

@@ -2,9 +2,11 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# OPTIONS_GHC -Wno-unused-imports #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# LANGUAGE MagicHash #-}
 
-module Day11 (runme, runex) where
+module Day11b (runme, runex) where
 
+import GHC.Exts
 import Text.RawString.QQ
 import qualified Data.IntMap as IM
 import Control.Applicative
@@ -26,13 +28,14 @@ import RunUtil (RunMe, runMeByteString)
 import AOCHelper (readInpByteSTring, Pos, Dir, tp)
 import qualified BSArray as BSA
 import Data.Maybe (mapMaybe)
+import qualified GHC.Integer.Logarithms as L
 
 example :: ByteString
 example =
   [r|125 17
   |]
 
-example2 :: ByteString 
+example2 :: ByteString
 example2 = "0 1 10 99 999\n"
 
 runex :: RunMe
@@ -48,7 +51,7 @@ runex =
 runme :: RunMe
 runme =
   runMeByteString
-    "--- Day 11: Plutonian Pebbles ---"
+    "--- Day 11: Plutonian Pebbles <memo> ---"
     (readInpByteSTring "day11.txt")
     part1
     (Just 199986)
@@ -57,22 +60,27 @@ runme =
 
 ---
 
-blink1' :: Integral a => [(a, b)] -> [(a, b)]
+q :: Int -> String 
+q n | n == 2  = "A"
+q _ = "B"
+
+blink1 :: Int -> [Int]
+blink1 0 = [1] 
+blink1 n = case l `quotRem` 2 of 
+            (w,0) -> let (r,l) = n `quotRem` (10 ^ w) in [r,l]
+            _ -> [n * 2024]
+    where l = 1 + floor (logBase 10 (fromIntegral n))
+
+
+blink1' ::[(Int, Integer)] -> [(Int, Integer)]
 blink1' [] = []
 blink1' ((x,n):xs)  | x == 0 = (1,n) : blink1' xs
-                    | x <= 9 = (x * 2024,n): blink1' xs
-                    | x <= 99 = (x `div` 10,n):(x `mod` 10,n):blink1' xs
-                    | x <= 999 = (x * 2024,n): blink1' xs
-                    | x <= 9999 = (x `div` 100,n):(x `mod` 100,n):blink1' xs
-                    | x <= 99999 = (x * 2024,n): blink1' xs
-                    | x <= 999999 = (x `div` 1000,n):(x `mod` 1000,n):blink1' xs
-                    | x <= 9999999 = (x * 2024,n): blink1' xs
-                    | x <= 99999999 = (x `div` 10000,n):(x `mod` 10000,n):blink1' xs
-                    | x <= 999999999 = (x * 2024,n): blink1' xs
-                    | x <= 9999999999 = (x `div` 100000,n):(x `mod` 100000,n):blink1' xs
-                    | x <= 99999999999 = (x * 2024,n): blink1' xs
-                    | x <= 999999999999 = (x `div` 1000000,n):(x `mod` 1000000,n):blink1' xs
-                    | otherwise = undefined
+                    | even l = (x `div` 10 ^ (l `div` 2),n):(x `mod` 10 ^ (l `div` 2),n):blink1' xs
+                    | otherwise =  (x * 2024,n): blink1' xs
+        where len':: Int -> Int 
+              len' n =  (1 +  I# (L.integerLogBase# 10 (toInteger n))) :: Int --1 +  floor (logBase 10 (fromIntegral n))::Int
+              l = len' x 
+ 
 
 blink :: IM.IntMap Integer -> IM.IntMap Integer
 blink  = IM.fromListWith (+) . blink1' . IM.toList
