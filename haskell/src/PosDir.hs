@@ -3,7 +3,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module PosDir ((.+.), (.-.), (.*->.), (.->.) , fromPos,
-               toPos, rl, rr, Loc(..), Dir(..), Pos(..), mhdist, step, loc, pos2int, loc2int, int2loc,
+               toPos, rl, rr, Loc(..), Dir(..), Pos(..), mhdist, step, loc, pos2int, loc2int, int2loc, pdir,
                cardinalDirections, opposite)
 where
 
@@ -33,6 +33,9 @@ cardinalDirections = [NORTH, EAST, SOUTH, WEST]
 
 loc :: Pos -> Loc
 loc (Pos l _) = l
+
+pdir :: Pos -> Dir
+pdir (Pos _ d) = d
 
 pos2int :: Pos -> Int
 pos2int (Pos (x,y) d) = 4 * loc2int (x,y)  + fromEnum d

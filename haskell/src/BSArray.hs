@@ -9,6 +9,7 @@ module BSArray (BSArray
                , BSArray.lookup
                , makeBSarray
                , lookupMaybe
+               , unsafeLookup
                , BSArray.elemIndex
                , elemIndices
                , intIndex

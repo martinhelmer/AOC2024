@@ -3,16 +3,17 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use tuple-section" #-}
 
-module Algorithms (aStar, Distance (..), distify) where
+module Algorithms (aStar, Distance (..), distify, djikstra, paths, fromDist) where
 
 import Data.Bifunctor (second)
 import qualified Data.IntPSQ as PSQ
-import Data.IntMap.Strict as IM 
+import Data.IntMap.Strict as IM
 import Data.List (foldl')
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, fromJust)
 import Control.DeepSeq (deepseq, NFData (rnf))
 
--- import Debug.Trace (trace)
+import Debug.Trace (trace)
+import Data.Graph.Inductive (neighbors, gmap)
 
 data Distance = Distance Int | Infinity deriving (Eq, Show)
 
@@ -23,7 +24,7 @@ _ .+. Infinity = Infinity
 
 fromDist :: Distance -> Int
 fromDist (Distance i) = i
-fromDist Infinity = undefined
+fromDist Infinity = error "Trying to extract infinity"
 
 instance Ord Distance where
     (<=) :: Distance -> Distance -> Bool
@@ -37,18 +38,62 @@ instance NFData Distance where
   rnf (Distance q) = q `seq` ()
 
 type GMap = IM.IntMap Int
+type PrevMap = IM.IntMap [Int]
 type OpenSet = PSQ.IntPSQ Int ()
 
+type DQ = PSQ.IntPSQ Node Int
+type Node = Int
+type Dist = Int
 
 lookUp :: IntMap Int -> Key -> Distance
 lookUp m i = maybe Infinity Distance (IM.lookup i m)
+
+
+istrace = False
+
+trace'  s= if istrace then trace s else id
+
+-- | djikstra with history
+--
+-- > sourcenode targetnode nn
+--
+djikstra :: Key -> Key -> (Node -> [(Node, Dist)]) -> (GMap, PrevMap)
+djikstra source target nf = djikstra' target (PSQ.singleton source 0 0) (IM.singleton source 0) IM.empty nf
+
+
+djikstra' :: Key -> DQ -> GMap ->  PrevMap -> (Node -> [(Node, Dist)]) -> (GMap, PrevMap )
+djikstra' target q  dist  prev nf
+    | PSQ.null q =  (dist, prev)
+    | otherwise =
+        let (u, _, v , poppedQ) = (trace' $ "q:" ++ show q) fromJust $ PSQ.minView q
+            currentDist = lookUp dist u;
+            neighbors = (trace' $ show (nf u)) nf u
+            (dist'', prev'', q'') = Data.List.foldl' go (dist, prev, poppedQ) neighbors
+              where
+                go :: (GMap, PrevMap, DQ) ->(Key, Dist) -> (GMap, PrevMap, DQ)
+                go (dist', prev', q') (nkey, ndist) =
+                      case compare (Distance ndist .+. currentDist) (lookUp dist' nkey) of
+                        GT ->  trace' ("huh: " ++ show (dist', prev', q', nkey, ndist, currentDist)) (dist', prev', q')
+                        EQ ->  (dist', IM.insertWith (<>) nkey [u] prev', q')
+                        LT ->  ( IM.insert nkey (ndist + fromDist currentDist) dist'
+                                    , IM.insert nkey [u] prev'
+                                    , PSQ.insert nkey ndist (v+1) q'
+                                    )
+        in
+            if False && u == target then (dist, prev) else (trace' $ show q'') djikstra' target q'' dist'' prev'' nf
+
+
+paths :: Key -> Key -> PrevMap -> [[Key]]
+paths source target prev | source == target = [[target]]
+                         | otherwise = let prevs = fromMaybe (error "AA") $ IM.lookup target prev
+                                           allprevs = concatMap (\p -> paths source p prev) prevs
+                                       in  Prelude.map (target :) allprevs
 
 -- | 'aStar': does stuff stuff: 
 --
 -- > startnode goalpred h neighbors
 --
 -- /Since: 1.1.0.0/
-
 aStar :: [Int] -> (Int -> Bool) -> (Int -> Int) -> (Int -> [(Int, Int)]) -> Distance
 aStar startnodes goalpred h nf = aStar' openSet gScores goalpred h nf
   where

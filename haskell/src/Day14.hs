@@ -33,7 +33,10 @@ import RunUtil (RunMe, runMeByteString)
 import AOCHelper (readInpByteSTring, drawSparse, draw2dset)
 import PosDir (Pos, Loc, Dir)
 import qualified BSArray as BSA
-
+import Data.Function (on)
+import Data.List (minimumBy)
+import Data.Ratio (denominator)
+import Data.Maybe (mapMaybe)
 
 runex :: RunMe
 runex =
@@ -73,6 +76,8 @@ p=9,5 v=-3,-3
 |]
 
 data Robot = Robot !(Int,Int) !(Int,Int) deriving (Show)
+xval (Robot (x,_) _) = x 
+yval (Robot (_,y) _) = y 
 
 parseT ::ByteString -> Parser (Int,Int)
 parseT skip = (,) <$ string skip <*> signed decimal <* char ',' <*> signed decimal
@@ -136,15 +141,34 @@ var :: (Int, Int) -> [Robot] -> Int
 var (mx, my) = sum . map dz
     where dz (Robot (x,y) _)= let dx = x-mx `quot` 2; dy = (y-my `quot` 2 ) in dx*dx + dy*dy
 
+findvarminimums :: [[Robot]] -> (Int, Int)
+findvarminimums inf = (xmin, ymin)
+      where vars =  zip (map (\r -> (variance . map xval $ r, variance . map yval $ r)) inf) [0..]
+            xmin = snd $ minimumBy (compare `on` (fst . fst)) $ take 101 vars
+            ymin = snd $ minimumBy (compare `on` (snd . fst)) $ take 103 vars
+
+isIntSol :: (Int, Int) -> (Int, Int) -> Int -> Maybe Int
+isIntSol (firstx, firsty) (xmod, ymod) x =
+      case denominator (f x) of 
+          1 -> Just (x * xmod + firstx) 
+          _ -> Nothing 
+    where f :: Int -> Rational 
+          f x' = ( toRational (xmod * x' + firstx - firsty) ) / (toRational ymod)
+    
+
 go2 :: (Int, Int) -> ByteString  -> IO Integer
 go2 z s = do
   let robots =  map (parse' parseRobot ) $ BS.lines s
   let infinity = iterate (onesec z) robots
-  let answer = length .  takeWhile (> 410000) $ map (var z) infinity
-  putStrLn (draw2dset (map (\(Robot t _) -> t) (infinity !! (answer))))
-  return $ toInteger answer
+  -- let answer = length .  takeWhile (> 410000) $ map (var z) infinity
+  ---putStrLn (draw2dset (map (\(Robot t _) -> t) (infinity !! (answer))))
+  -- x 101 
+  -- y 103 
+  -- putStrLn (draw2dset (map (\(Robot t _) -> t) (infinity !! (answer))))
+  return . toInteger . head . (mapMaybe (isIntSol (findvarminimums infinity) z )) $ [0..]
 
-variance :: [Int]  -> Double
+variance :: [Int]  -> Float
 variance l = (sum . map (\v -> (v - average)^2) $ fl ) / (fromIntegral (length fl))
-    where fl = map fromIntegral l :: [Double]
+    where fl = map fromIntegral l :: [Float]
           average = (sum fl) / fromIntegral (length fl)
+
