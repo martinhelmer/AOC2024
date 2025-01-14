@@ -6,7 +6,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
 
-module Day17 (runme, runex) where
+module Day17 (runme, runex, runhel) where
 
 import Text.RawString.QQ
 
@@ -72,6 +72,17 @@ runme =
     part2
     (Just 107413700225434)
 
+
+runhel :: RunMe
+runhel =
+  runMeByteString
+    "--- Day 17: Chronospatial Computer  (helfamilj input)---"
+    (readInpByteSTring "day17helfamilj.txt")
+    part1
+    (Just 503576154)
+    part2
+    (Just 164516454365621)
+
 ---
 -- State Running 729 0 0 0 [0,1,5,4,3,0] ""
 example :: ByteString
@@ -101,27 +112,30 @@ data Instructions = ADV | BXL | BST | JNZ | BXZ | OUT | BDV | CDV deriving (Enum
 
 data Status = Running | Stopped deriving (Eq, Show)
 
-data State = State { status :: Status,
-                     regA :: Register,
-                     regB :: Register,
-                     regC :: Register,
-                     instr :: Pointer,
-                     prog :: Program,
-                     output :: String
+data State = State { status :: !Status,
+                     regA :: !Register,
+                     regB :: !Register,
+                     regC :: !Register,
+                     instr :: !Pointer,
+                     prog :: !Program,
+                     output :: !String
                     } deriving (Show)
 
 cycleS :: State -> State
 cycleS s
     | i >= length (prog s) = s {status = Stopped}
     | otherwise = case opcode of
-        ADV -> s { regA = (regA s `quot` (2^(combo operand))), instr = i + 2  }
+        ADV -> s { regA = (regA s `shiftR` (combo operand)), instr = i + 2  }
         BXL -> s { regB = regB s `xor` operand, instr = i + 2}
         BST -> s { regB = combo operand `mod` 8, instr = i + 2 }
         JNZ -> s { instr = if regA s == 0 then i + 2 else operand }
         BXZ -> s { regB = regB s `xor` regC s, instr = i + 2}
         OUT -> s { output = (output s)++show (combo operand `mod` 8),instr = i + 2 }
-        BDV -> s { regB = (regA s `quot` (2^(combo operand))), instr = i + 2  }
-        CDV -> s { regC = (regA s `quot` (2^(combo operand))), instr = i + 2  }
+        -- OUT -> s { output = intToDigit (combo operand `mod` 8) : (output s), instr = i + 2  }
+        BDV -> s { regB = (regA s `shiftR` (combo operand)), instr = i + 2  }
+        CDV -> s { regC = (regA s `shiftR` (combo operand)), instr = i + 2  }
+
+-- `quot` (2^(combo operand))
 
     where i = instr s
           opcode = toEnum $ prog s !! i
@@ -137,7 +151,7 @@ parse' :: Parser b -> ByteString -> b
 parse' p s = either (error . show) id $ AP.parseOnly (p <* AP.endOfInput) s
 
 runwith :: State -> String
-runwith  = output 
+runwith  = output
           . head 
           . filter ((==) Stopped . status)
           . iterate cycleS 
@@ -150,12 +164,12 @@ part1 s =
     $ parse' parseComp s
 
 findlowest :: State -> String -> Int -> (String, Int)
-findlowest comp s startwith = let q =  head . filter (\r -> fst r == s) . map (\x -> (runwith (comp { regA = x}), x)) $ [startwith..] in q
+findlowest comp s startwith = let q =  head . dropWhile (\r -> fst r /= s) . map (\x -> (runwith (comp { regA = x}), x)) $ [startwith..] in q
 
 go :: Show a => [a] -> State -> Int
 go (x:xs) comp = go' (show x) xs 0 
     where go' match [] startwith = snd $ findlowest comp match startwith
-          go' match (x:xs) startwith = let l = snd $ findlowest comp match startwith in go' (show x ++ match) xs (l `shiftL` 3)
+          go' match (x:xs) startwith = let l = snd $ findlowest comp  match startwith in go' (show x ++ match) xs (l `shiftL` 3)
 part2 :: ByteString -> IO Integer
 part2 s = do
     let comp = parse' parseComp s

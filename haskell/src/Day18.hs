@@ -37,7 +37,7 @@ import PosDir (cardinalDirections, Loc, (.->.))
 import Algorithms (djikstra, aStar, fromDist, Distance (Infinity))
 import qualified Data.Bifunctor
 import Data.Maybe (fromJust, fromMaybe)
-
+import Control.Monad.Reader (Reader, ask, asks, runReader, MonadReader (ask))
 example :: ByteString
 example =
   [r|5,4
@@ -91,11 +91,16 @@ runme =
 data Memory = Memory { size :: Int
                      , incoming :: M.Map Loc Int} deriving (Show)
 
+size' :: Reader Memory Int
+size' = asks size
+
 parse' :: Parser b -> ByteString -> b
 parse' p s = either (error . show) id $ AP.parseOnly (p <* AP.endOfInput) s
 
 parseLoc :: Parser (Int,Int)
 parseLoc = (,) <$> decimal <* char ',' <*> decimal
+
+-- 
 
 nextnodes :: Memory -> Int -> Loc -> [(Loc, Int)]
 nextnodes (Memory siz inc) limit loc = (,1) <$> filter ok (map (loc .->.) cardinalDirections)
@@ -108,14 +113,25 @@ nn m n k = map (Data.Bifunctor.first (loc2key m)) $ nextnodes m n (key2loc m k)
 loc2key :: Memory -> Loc -> Int
 loc2key m (x,y) = y + (size m) * x
 
+loc2key' :: Loc -> Reader Memory Int
+loc2key' (x,y) = asks (\m ->(y + (size m) * x) )
+
 key2loc :: Memory -> Int -> Loc
 key2loc m k = k `divMod` (size m)
 
 endkey :: Memory -> Int
-endkey m =let s = size m - 1 in (loc2key m (s,s)) 
+endkey m =let s = size m - 1 in (loc2key m (s,s))
 
 startkey :: Memory -> Int
 startkey m = loc2key m (0, 0)
+
+startkey' :: Reader Memory Int
+startkey' = loc2key' (0, 0)
+
+endkey' :: Reader Memory Int
+endkey' = do
+    m <- ask
+    let s = size m - 1 in return (loc2key m (s,s))
 
 binomsearch :: Integral t => (t -> Distance) -> t -> t -> t
 binomsearch f lower upper
@@ -126,21 +142,25 @@ binomsearch f lower upper
             Infinity -> binomsearch f lower mid
             _ -> binomsearch f mid upper
 
-shortest :: Memory -> Int -> Distance
-shortest m n = aStar [startkey m] (endkey m ==) (const 0) (nn m n)
+shortest :: Int -> Reader Memory Distance
+shortest n = do
+    m <- ask
+    q <- asks ((flip nn) n )
+    sk <- startkey'
+    return $ aStar [sk] (endkey m ==) (const 0) (nn m n)
 
 part1 :: ByteString -> IO Integer
 part1  s=  do
     let siz = 71
-    let input =  zip (map (parse' parseLoc) (BS.lines s)) ([0..]::[Int])
+    let input =  zip (map (parse' parseLoc) (BS.lines s)) [0..]
     let m = Memory siz (M.fromList input)
-    return $ toInteger . fromDist $ shortest m 1024
+    return $ toInteger . fromDist $ runReader (shortest 1024) m
 
 part2 :: ByteString -> IO Integer
 part2 s = do
     let siz = 71
-    let input =  zip (map (parse' parseLoc) (BS.lines s)) ([0..]::[Int])
+    let input =  zip (map (parse' parseLoc) (BS.lines s)) [0..]
     let m = Memory siz (M.fromList input)
-    let q = binomsearch (shortest m) 1024 (length input)
+    let q = binomsearch (\x -> runReader (shortest x) m) 1024 (length input)
     -- outputs (ab,cd) as abcd (framework needs result to be integer)
-    return $ toInteger $ let (x,y) = fst (input !! q) in x * 100 + y 
+    return $ toInteger $ let (x,y) = fst (input !! q) in x * 100 + y

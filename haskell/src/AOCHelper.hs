@@ -24,6 +24,7 @@ import qualified Data.Text.IO as TIO
 
 import Data.Bifunctor ( Bifunctor(second) )
 import Data.Hashable (Hashable)
+import Data.Char (ord)
 
 -- squareRoot = floor . sqrt . fromIntegral
 
@@ -49,10 +50,10 @@ mapInsert:: (Ord a) => M.Map a b -> [(a,b)] -> M.Map a b
 mapInsert = foldl (\r (a,b) -> M.insert a b r)
 
 hashmapCollect:: (Ord k,Semigroup a, Hashable k) => (b -> a) -> [(k, b)] -> HM.Map k a
-hashmapCollect puure = HM.fromListWith (<>) . map (second puure) 
+hashmapCollect puure = HM.fromListWith (<>) . map (second puure)
 
 mapCollect:: (Ord k, Semigroup a) => (b -> a) -> [(k, b)] -> M.Map k a
-mapCollect puure = M.fromListWith (<>) . map (second puure) 
+mapCollect puure = M.fromListWith (<>) . map (second puure)
 
 
 readInp :: [Char] -> IO String
@@ -149,7 +150,7 @@ draw2dchararr a = draw2dcharmap ( M.fromList $ map (\((y,x),v) -> ((x,y),v)) $ A
 
 drawSparse :: (Int, Int) -> [(Int,Int)] -> [Char]
 drawSparse (rows, cols) l = unlines . chunksOf cols . map (\c -> if S.member c s then '#' else '.') $ (,) <$> [0..(rows-1)] <*> [0..(cols-1)]
-    where s= S.fromList l 
+    where s= S.fromList l
 
 intDispl ::  Int -> Char
 intDispl 1 = '\x2588'
@@ -177,4 +178,9 @@ tp (a,b) (c,d) = (a+c, b+d)
 splitOnBs :: BS.ByteString -> BS.ByteString -> [BS.ByteString]
 splitOnBs x y = h : if BS.null t then [] else splitOnBs x (BS.drop (BS.length x) t)
     where (h,t) = BS.breakSubstring x y
-    
+
+stringlisthash :: Foldable t => t [Char] -> Integer
+stringlisthash l = h' (concat l)
+    where h' [] = 0
+          h' [x] = toInteger $ ord x - ord ' '
+          h' (x:xs) = toInteger (ord x - ord ' ') * 58 + h' xs

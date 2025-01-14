@@ -133,5 +133,5 @@ part2 :: ByteString -> IO Integer
 part2 s = do
     let stuff = readinp2 (BS.unpack s) 0
     let fromright = (reverse . filter isFile) stuff
-    let all = fitall stuff fromright
-    return  (toInteger (checksum' all S.empty 0))
+    let all' = fitall stuff fromright
+    return  (toInteger (checksum' all' S.empty 0))
