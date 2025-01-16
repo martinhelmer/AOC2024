@@ -61,7 +61,7 @@ runme =
     part1
     (Just 136780)
     part2
-    (Nothing)
+    (Just 175210)
 
 type NF = Char -> [Char] -> [Char]
 ---
@@ -116,32 +116,38 @@ d2 (a,b) = case (a,b) of
         ('>', 'v') -> '<'
         (e,f) -> error (show (e,f))
 
-findshortest ::Int -> [Char] -> NF -> [Char] -> Char ->  [[Char]]
-findshortest bestsofar t nf visited to
-                | length t > bestsofar = []
-                | from == to = [t]
-                | otherwise = fst q
-
-        where from = head t
-              q = foldl' go ([], bestsofar) (nf from visited)
+shortestPath :: NF -> Char -> Char -> [[Char]]
+shortestPath nf f to = sp 99 [f] [f]
+  where 
+    sp bestsofar tl visited
+                | length tl > bestsofar = []
+                | from == to = [tl]
+                | otherwise = fst $ foldl' go ([], bestsofar) (nf from visited)
+        where from = head tl
               go (l, b) next  =
-                     let fs =  findshortest b (next:t) nf (from:visited) to
+                     let fs =  sp b (next:tl) (from:visited)
                      in if (null fs) then (l,b) else if (length (head fs)) < b then (fs, (length (head fs)) ) else (l ++ fs ,b)
 
-findshortest' :: NF -> ((Char, Char)-> Char) -> Char -> Char -> [[Char]]
-findshortest' nf d f t =
-    let f' = findshortest 99 [f] nf [f] t
-    in map ((++ "A") . (\s -> zipWith (curry d) s (tail s) ) . reverse) f'
 
-fs st n f t
-    | n == 0 = head $ findshortest' nf2 d2 f t
+findshortest' :: Bool -> NF -> ((Char, Char)-> Char) -> Char -> Char -> [[Char]]
+findshortest' deep nf d f t =
+    let f' = shortestPath nf f t 
+        shortest = map ((++ "A") . (\s -> zipWith (curry d) s (tail s) ) . reverse) f'
+    in if not deep then shortest else 
+            let godeep = map (\s -> (length $ fsFromString False 6 3 s, s)) shortest 
+            in [snd . minimum $ godeep] 
+
+fs :: Bool -> Int -> Int -> Char -> Char -> [Char]
+fs deep st n f t
+    | n == 0 = head $ findshortest' False nf2 d2 f t
     | otherwise =
-            let fssl = map fseq $ findshortest' (if n == st then nf1 else nf2) (if n == st then d1 else d2) f t
-                fseq s = concatMap (uncurry (fs st (n - 1))) (zip ('A':s) s)
+            let fssl = map (fsFromString deep st (n-1)) $ findshortest' deep (if n == st then nf1 else nf2) (if n == st then d1 else d2) f t
                 minl = minimum (map length fssl)
             in head $ filter (\s -> length s == minl) $ fssl
 
-fs' n s = concatMap (\(f,t) -> fs n n f t) $ zip ('A':s) s
+
+fsFromString :: Bool -> Int -> Int -> [Char] -> [Char]
+fsFromString deep st n s = concatMap (uncurry (fs deep st n)) $ zip ('A':s) s
 
 numcode :: String -> Int
 numcode s = read (init s)
@@ -150,14 +156,14 @@ part1 :: ByteString -> IO Integer
 part1 s = do
     let codes = map (BS.unpack) $ BS.lines s
     -- print  (map (\s -> (length $ fs' 2 s, numcode s)) codes)
-    return . toInteger . sum $ (map (\s -> length (fs' 2 s) * (numcode s)) codes)
+    return . toInteger . sum $ (map (\s -> length (fsFromString True 2 2 s) * (numcode s)) codes)
 
 part2 :: ByteString -> IO Integer
 part2 s = do
     let codes = map (BS.unpack) $ BS.lines s
-    let c = head codes 
-    let ls =  ( map (\n -> length (fs' n c)) [2,3,4,5,6,7,8,9,10])
+    let c = head codes
+    let ls =  ( map (\n -> length (fsFromString True n n c)) [2,3,4,5,6,7,8,9,10])
     -- print (ls)
     -- print (map (\(a,b) -> (toRational a)/(toRational b)) $ zip (drop 2 $ ls) ls )
     -- print ((fs' 5 c))
-    return 0
+    return . toInteger . sum $ ls
