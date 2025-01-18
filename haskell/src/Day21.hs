@@ -33,6 +33,7 @@ import PosDir (Dir)
 import qualified BSArray as BSA
 import Data.Foldable (foldl')
 import Data.Char (ord)
+import Data.Function.Memoize 
 
 example :: ByteString
 example =
@@ -61,7 +62,7 @@ runme =
     part1
     (Just 136780)
     part2
-    (Just 175210)
+    (Just 167538833832712)
 
 type NF = Char -> [Char] -> [Char]
 ---
@@ -118,7 +119,7 @@ d2 (a,b) = case (a,b) of
 
 shortestPath :: NF -> Char -> Char -> [[Char]]
 shortestPath nf f to = sp 99 [f] [f]
-  where 
+  where
     sp bestsofar tl visited
                 | length tl > bestsofar = []
                 | from == to = [tl]
@@ -128,14 +129,15 @@ shortestPath nf f to = sp 99 [f] [f]
                      let fs =  sp b (next:tl) (from:visited)
                      in if (null fs) then (l,b) else if (length (head fs)) < b then (fs, (length (head fs)) ) else (l ++ fs ,b)
 
+fs2 =  findshortest' True nf2 d2 
 
 findshortest' :: Bool -> NF -> ((Char, Char)-> Char) -> Char -> Char -> [[Char]]
 findshortest' deep nf d f t =
-    let f' = shortestPath nf f t 
+    let f' = shortestPath nf f t
         shortest = map ((++ "A") . (\s -> zipWith (curry d) s (tail s) ) . reverse) f'
-    in if not deep then shortest else 
-            let godeep = map (\s -> (length $ fsFromString False 6 3 s, s)) shortest 
-            in [snd . minimum $ godeep] 
+    in if not deep then shortest else
+            let godeep = map (\s -> (length $ fsFromString False 6 3 s, s)) shortest
+            in [snd . minimum $ godeep]
 
 fs :: Bool -> Int -> Int -> Char -> Char -> [Char]
 fs deep st n f t
@@ -149,6 +151,22 @@ fs deep st n f t
 fsFromString :: Bool -> Int -> Int -> [Char] -> [Char]
 fsFromString deep st n s = concatMap (uncurry (fs deep st n)) $ zip ('A':s) s
 
+--- 
+digitPadPaths :: [Char] -> [Char]
+digitPadPaths s = concat $ zipWith (fs') ('A':s) s
+    where fs' f t=  head $ findshortest' True nf1 d1 f t
+
+padLength ::  Int -> [Char] -> Int
+padLength n s = let p =  digitPadPaths s  in sum (zipWith ((expandedLength n)) ('A':p) p)
+
+expandedLength = memoize3 expandedLength'
+
+expandedLength' :: Int -> Char -> Char -> Int
+expandedLength' 0 _ _ = 1
+expandedLength' n f t = sum . map (uncurry (expandedLength (n - 1))) $ let p =  head $ fs2 f t in (zip ('A':p) p)
+
+--- 
+
 numcode :: String -> Int
 numcode s = read (init s)
 
@@ -156,14 +174,11 @@ part1 :: ByteString -> IO Integer
 part1 s = do
     let codes = map (BS.unpack) $ BS.lines s
     -- print  (map (\s -> (length $ fs' 2 s, numcode s)) codes)
-    return . toInteger . sum $ (map (\s -> length (fsFromString True 2 2 s) * (numcode s)) codes)
+    return . toInteger . sum $ (map (\s -> (padLength 2 s) * (numcode s)) codes)
 
 part2 :: ByteString -> IO Integer
 part2 s = do
     let codes = map (BS.unpack) $ BS.lines s
     let c = head codes
-    let ls =  ( map (\n -> length (fsFromString True n n c)) [2,3,4,5,6,7,8,9,10])
-    -- print (ls)
-    -- print (map (\(a,b) -> (toRational a)/(toRational b)) $ zip (drop 2 $ ls) ls )
-    -- print ((fs' 5 c))
-    return . toInteger . sum $ ls
+    let ls =  ( map (\n -> padLength n c)) [25]
+    return . toInteger . sum $ (map (\s -> (padLength 25 s) * (numcode s)) codes)

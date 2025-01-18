@@ -6,6 +6,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE PackageImports #-}
 
 module Day19 (runme, runex) where
 
@@ -33,7 +34,7 @@ import qualified Data.ByteString.Char8 as BS
 import RunUtil (RunMe, runMeByteString)
 import AOCHelper (readInpByteSTring, Pos, Dir, tp)
 import qualified BSArray as BSA
-import qualified Data.HashSet as S
+import qualified "hashmap" Data.HashSet as S
 import qualified Data.Map as M
 import Debug.Trace (trace)
 import Data.Maybe (fromMaybe)
