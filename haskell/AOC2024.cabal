@@ -1,6 +1,6 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.36.0.
+-- This file has been generated from package.yaml by hpack version 0.37.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -30,7 +30,32 @@ library
       BSArray
       Day01
       Day02
-      Dayx
+      Day03
+      Day04
+      Day05
+      Day06
+      Day07
+      Day08
+      Day09
+      Day09b
+      Day10
+      Day11
+      Day11b
+      Day12
+      Day13
+      Day14
+      Day15
+      Day16
+      Day17
+      Day18
+      Day19
+      Day20
+      Day21
+      Day22
+      Day23
+      Day24
+      Day25
+      DayXX
       Lib
       PosDir
       RunUtil
@@ -51,7 +76,10 @@ library
     , fgl
     , format-numbers
     , hashable
+    , hashmap
     , heaps
+    , memoize
+    , mtl
     , parallel
     , pretty-terminal
     , prettyprinter
@@ -86,7 +114,10 @@ executable haskell-exe
     , fgl
     , format-numbers
     , hashable
+    , hashmap
     , heaps
+    , memoize
+    , mtl
     , parallel
     , pretty-terminal
     , prettyprinter
@@ -123,8 +154,11 @@ test-suite haskell-test
     , fgl
     , format-numbers
     , hashable
+    , hashmap
     , heaps
     , hspec
+    , memoize
+    , mtl
     , parallel
     , pretty-terminal
     , prettyprinter

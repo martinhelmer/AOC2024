@@ -125,10 +125,12 @@ shortestPath nf f to = sp 99 [f] [f]
                 | from == to = [tl]
                 | otherwise = fst $ foldl' go ([], bestsofar) (nf from visited)
         where from = head tl
-              go (l, b) next  =
-                     let fs =  sp b (next:tl) (from:visited)
-                     in if (null fs) then (l,b) else if (length (head fs)) < b then (fs, (length (head fs)) ) else (l ++ fs ,b)
+              go (l, b) next | null fs' = (l,b)
+                             | (length (head fs')) < b = (fs', (length (head fs')) )
+                             | otherwise = (l ++ fs' ,b)
+                              where fs' = sp b (next:tl) (from:visited)
 
+fs2 :: Char -> Char -> [[Char]]
 fs2 =  findshortest' True nf2 d2 
 
 findshortest' :: Bool -> NF -> ((Char, Char)-> Char) -> Char -> Char -> [[Char]]
@@ -159,6 +161,7 @@ digitPadPaths s = concat $ zipWith (fs') ('A':s) s
 padLength ::  Int -> [Char] -> Int
 padLength n s = let p =  digitPadPaths s  in sum (zipWith ((expandedLength n)) ('A':p) p)
 
+expandedLength :: Int -> Char -> Char -> Int
 expandedLength = memoize3 expandedLength'
 
 expandedLength' :: Int -> Char -> Char -> Int
@@ -174,11 +177,9 @@ part1 :: ByteString -> IO Integer
 part1 s = do
     let codes = map (BS.unpack) $ BS.lines s
     -- print  (map (\s -> (length $ fs' 2 s, numcode s)) codes)
-    return . toInteger . sum $ (map (\s -> (padLength 2 s) * (numcode s)) codes)
+    return . toInteger . sum $ (map (\code -> (padLength 2 code) * (numcode code)) codes)
 
 part2 :: ByteString -> IO Integer
 part2 s = do
     let codes = map (BS.unpack) $ BS.lines s
-    let c = head codes
-    let ls =  ( map (\n -> padLength n c)) [25]
-    return . toInteger . sum $ (map (\s -> (padLength 25 s) * (numcode s)) codes)
+    return . toInteger . sum $ (map (\code -> (padLength 25 code) * (numcode code)) codes)

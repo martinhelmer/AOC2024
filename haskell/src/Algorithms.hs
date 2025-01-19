@@ -2,6 +2,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use tuple-section" #-}
+{-# OPTIONS_GHC -Wno-unused-imports #-}
 
 module Algorithms (aStar, Distance (..), distify, djikstra, paths, fromDist) where
 
@@ -49,8 +50,10 @@ lookUp :: IntMap Int -> Key -> Distance
 lookUp m i = maybe Infinity Distance (IM.lookup i m)
 
 
+istrace :: Bool
 istrace = False
 
+trace' :: String -> a -> a
 trace'  s= if istrace then trace s else id
 
 -- | djikstra with history

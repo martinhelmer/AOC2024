@@ -44,7 +44,9 @@ dependencies:
 - heaps 
 - containers
 - hashmap
-
+- mtl
+- unordered-containers
+- memoize 
 
 ghc-options:
 - -Wall

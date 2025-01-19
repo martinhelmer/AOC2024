@@ -90,7 +90,7 @@ go n l = sum $  IM.elems $ if even n then m1 else blink m1
     where m1 = iterate blinkTwice (IM.fromList l) !! max 0 (n `div` 2)
 
 part1 :: ByteString -> IO Integer
-part1  = return . toInteger . go 25 . parse
+part1  = return . go 25 . parse
 
 part2 :: ByteString -> IO Integer
-part2  = return . toInteger . go 75 . parse
+part2  = return . go 75 . parse

@@ -71,7 +71,7 @@ isSafe report = isSafe' Nothing (zipWith  (-) (tail report) report)       -- tak
 
 
 isSafe2 :: [Int] -> Bool
-isSafe2 report = any isSafe $ report:zipWith (++) (inits report) (tail $ tails report)
+isSafe2 report = any isSafe $ report:zipWith (++) (inits report) (drop 1 $ tails report)
 
 part1 :: ByteString -> IO Integer
 part1 s = do
