@@ -41,9 +41,11 @@ import Day19
 import Day20
 import Day21
 import Day22
+import Day22b 
 import Day23
 import Day24 
 import Day25 
+import Data.Time (getCurrentTime, diffUTCTime, nominalDiffTimeToSeconds)
 
 type RunResult = ((Double, Integer), (Double, Integer))
 type Runner = RunMe-> IO RunResult
@@ -98,6 +100,8 @@ rmap = M.fromList
     , ("_21", Day21.runex)
     , ("22", Day22.runme)
     , ("_22", Day22.runex)
+    , ("22b", Day22b.runme)
+    , ("_22b", Day22b.runex)
     , ("23", Day23.runme)
     , ("_23", Day23.runex)
     , ("24", Day24.runme)
@@ -124,7 +128,7 @@ sToR "ALL" = do
 sToR s = doit (runmany 1) [rmap M.! s] showVerbose
 
 f :: [String] -> IO (Double, ())
-f args = timeItT (sToR $ head args)
+f args = timeItT' (sToR $ head args)
 
 main :: IO ()
 main = do
@@ -173,11 +177,19 @@ showVerbose env ((t1, r1), (t2, r2)) = do
         ]
         where sr p r xp t = T.unwords [ p,T.pack " = ", showResult 10 xp r , " (", T.justifyRight 15 ' ' . T.pack . show $ xp, ") dur:", showDur 10 t]
 
+timeItT' :: IO b -> IO (Double, b)
+timeItT' f = do 
+    s <- getCurrentTime
+    a <- f
+    e <- getCurrentTime
+
+    return (realToFrac $ nominalDiffTimeToSeconds $ diffUTCTime e s, a) 
+
 runmany :: Int -> RunMe -> IO ((Double, Integer), (Double, Integer))
 runmany n env = do
     (p1, p2) <- let go ((t1, _), (t2, _)) _ = do
-                        (t1', r1') <- timeItT (exec 1 $ runMeExecInfo env)
-                        (t2', r2') <- timeItT (exec 2 $ runMeExecInfo env)
+                        (t1', r1') <- timeItT' (exec 1 $ runMeExecInfo env)
+                        (t2', r2') <- timeItT' (exec 2 $ runMeExecInfo env)
                         return ((t1 + t1', r1'), (t2 + t2', r2'))
                 in foldM go ((0.0, 0), (0.0, 0)) [1 .. n]
     let divn  =  first ( / fromIntegral n)

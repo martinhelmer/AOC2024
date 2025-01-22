@@ -7,7 +7,7 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE TupleSections #-}
 
-module Day22 (runme, runex) where
+module Day22b (runme, runex) where
 
 import Text.RawString.QQ
 
@@ -38,14 +38,13 @@ import qualified BSArray as BSA
 import Data.Bits (xor, Bits (shiftL, shiftR))
 import Data.Int (Int32, Int64)
 import Data.Foldable (foldl')
-import Data.Vector.Unboxed (Vector, (//), (!))
+import Data.Vector.Unboxed (Vector, (//))
 import qualified Data.Vector.Unboxed as V
 import Control.Seq (using)
 import qualified Control.Parallel.Strategies as S
 import Data.List.Split (chunksOf)
 import Data.Word (Word16, Word8)
-import Data.Array.Unboxed (accumArray, Array)
-import Control.Parallel (par, pseq)
+import Data.Array.Unboxed (accumArray,(!), Array)
 
 example :: ByteString
 example =
@@ -67,7 +66,7 @@ runex =
 runme :: RunMe
 runme =
   runMeByteString
-    "--- Day 22: Monkey Market ---"
+    "--- Day 22: Monkey Market MAP ---"
     (readInpByteSTring "day22.txt")
     part1
     (Just 13004408787)
@@ -83,18 +82,32 @@ prune :: In -> In
 prune a = a `mod` 16777216
 
 nxt :: In -> In
-nxt = let !l = prune . mix' (`shiftL` 11)  . prune . mix' (`shiftR` 5) . prune . mix' (`shiftL` 6 ) in l
+nxt = let l = prune . mix' (`shiftL` 11)  . prune . mix' (`shiftR` 5) . prune . mix' (`shiftL` 6 ) in l
+{-# INLINE nxt #-} 
 
-
-get1 :: [(In,In)] -> In -> In -> In -> In -> [In] -> [(In, In)]
+get1 :: [(In,Integer)] -> In -> In -> In -> In -> [In] -> [(In, Integer)]
 get1 l a b c d (e:xs) | null xs = f:l
                       | otherwise = get1 (f:l) b c d e xs
-                where f = ((b-a+9) * 19^3 + (c-b+9)*19^2 + (d-c+9)*19 + (e-d+9),e)
+                where f = ((b-a+9) * 19^3 + (c-b+9)*19^2 + (d-c+9)*19 + (e-d+9),fromIntegral e)
 get1 _ _ _ _ _ _= undefined
 
 
-get1' :: [In] -> [(In, In)]
+get1' :: [In] -> [(In, Integer)]
 get1' (a:b:c:d:e:xs) = get1 [] a b c d (e:xs)
+
+mkmap :: In -> IntMap Integer
+mkmap n = IM.fromListWith (flip const) . drop 3 . get4'' 0 0 $ (doN' n 2001)  -- 2001 take 2001 . iterate nxt
+{-# INLINE mkmap #-} 
+
+
+get4'' :: In   -- last key
+          -> In -- last val 
+          -> [In] 
+          -> [(In,Integer)]
+get4'' lk lv [] = []
+get4'' lk lv (a:xs) = let s = (lk * 19 + ((a-lv) + 9)) `mod` 130321 in (s,fromIntegral a) : get4'' s a (xs)
+{-# INLINE get4'' #-} 
+
 
 doN :: (Eq t, Num t) => In -> t -> In
 doN i 0 = i
@@ -104,54 +117,22 @@ doN i n = let nn = doN (nxt i) (n-1) in nn
 part1 :: ByteString -> IO Integer
 part1 s = do
     let !numbers = map (read . BS.unpack) $ BS.lines s::[In]
-        !ss = map (`doN` 2000) numbers  `S.using` S.parListChunk 32 S.rdeepseq
+        !ss = (map (`doN` 2000) numbers)  `S.using` S.parListChunk 32 S.rdeepseq
     return . toInteger . sum $ ss
+
+uv :: [IntMap Integer] -> IntMap Integer
+uv = foldl' (IM.unionWith (+)) IM.empty
+
+part2 :: ByteString -> IO Integer
+part2 s = do
+     let numbers = map (read . BS.unpack) $ BS.lines s::[In]
+         maps = map mkmap numbers  `S.using` S.parListChunk (length numbers `div` 16 ) S.rseq
+         total = uv maps 
+     -- print (sum . map IM.size $ maps)
+     return . toInteger $ maximum . IM.elems $ total
 
 ---
 doN' :: In -> In -> [In]
 doN' i 0 = []
 doN' i n = (i `mod` 10) : doN' (nxt i) (n-1)
-
-doNV :: In -> In -> Vector In
-doNV i n = V.iterateN n nxt i
-
--- mkvector :: In -> Vector In
--- mkvector n = let nv =  V.replicate (19^4) (0) in nv  `V.unsafeUpd` ( (get1' $ (doN' n 2001)))
-
-mkvector :: In -> Vector In
-mkvector n = let nv =  V.replicate (19^4) (0) in nv  `V.unsafeUpd` ( (get1' $ (doN' n 2001)))
-
-
-mkone :: In -> In -> [((In, In), In)]
-mkone i n = map (\(ix,v) -> ((i,ix) ,v)) (get1' $ (doN' n 2001))
-
-mkmany :: [In] -> [((Int, Int), In)]
-mkmany = concat . zipWith (mkone) [0..]
-
-vlen :: Int
-vlen = 19^4
-
-foldsum :: [Vector In] -> Vector In
-foldsum = foldl' (\v1 v2 -> V.generate vlen (\i -> v1 `V.unsafeIndex` i + v2 `V.unsafeIndex` i)) (V.replicate vlen 0)
-
-geta :: [In] -> Array (Int, Int) In
-geta numbers = accumArray (\ _ x -> x) 0 ((0,0),(length numbers, 19^4::Int)) (mkmany numbers)
-
--- part2'' :: ByteString -> IO Integer
--- part2'' s = do
---      let !numbers = map (read . BS.unpack) $ BS.lines s::[In]
---          a = geta numbers 
---      return . toInteger $ maximum $ map  (\ix -> sum (map (\n -> a ! (n,ix)) [0..(length numbers-1)]))  [0..19^4-1]
-
-part2 :: ByteString -> IO Integer
-part2 s = do
-     let numbers = map (read . BS.unpack) $ BS.lines s::[In] 
-         v = map mkvector  numbers
-        --  [a,b,c,d] = chunksOf 385 v
-        --  total = let fa = foldsum a 
-        --              fb = foldsum b
-        --              fc = foldsum c
-        --              fd = foldsum d
-        --              in fa `par` fb `par` fc `par` fd `pseq` foldsum [fa,fb,fc,fd]
-         total = foldsum v 
-     return . toInteger $ V.maximum total
+{-# INLINE doN' #-} 

@@ -58,6 +58,8 @@ ghc-options:
 - -Wmissing-home-modules
 - -Wpartial-fields
 - -Wredundant-constraints
+- -O2
+- -threaded
 
 library:
   source-dirs: src
@@ -67,7 +69,7 @@ executables:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
-     - -rtsopts
+     - -with-rtsopts "-N8"
     dependencies:
     - AOC2024
 

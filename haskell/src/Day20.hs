@@ -5,6 +5,7 @@
 {-# OPTIONS_GHC -Wno-unused-imports #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
+{-# LANGUAGE BangPatterns #-}
 
 module Day20 (runme, runex) where
 
@@ -34,6 +35,7 @@ import BSArray (BSArray)
 import PosDir ( Pos(..), Loc, loc, rl, rr, (.->.), (.+.), cardinalDirections, mhdist )
 import Data.Maybe (fromJust, fromMaybe, mapMaybe)
 import qualified Data.Map as M
+import qualified Control.Parallel.Strategies as S
 
 
 example :: ByteString
@@ -68,7 +70,7 @@ runex =
 runme :: RunMe
 runme =
   runMeByteString
-    "--- Day 20: Race Condition ---"
+    "--- Day 20: Race Condition / v1 / PAR---"
     (readInpByteSTring "day20.txt")
     part1
     (Just 1263)
@@ -94,7 +96,7 @@ circle :: Int -> [(Int, Int)]
 circle r = [(x,y) | x <- [-r..r] , y <- [-r..r] , let d = (abs x + abs y) in (d >= 2) && (d <= r) ]
 
 cheats :: Int -> M.Map Loc Int -> Loc -> [Int]
-cheats d m l = mapMaybe (cheat m l) $ map (l .+.) (circle d)
+cheats d m l = let !ll = mapMaybe (cheat m l) $ map (l .+.) (circle d) in ll
 
 cheat m here d = let dst = (fromMaybe 0 ((-) <$> M.lookup d m <*> M.lookup here m) - mhdist here d) in if dst > 0 then Just dst else Nothing
 
@@ -114,6 +116,7 @@ part2 s = do
      let sp = fromMaybe (error "S does not exist") $ BSA.elemIndex bsa 'S'
      let ep = fromMaybe (error "E does not exist") $ BSA.elemIndex bsa 'E'
      let mymap = M.fromList $ zip  (walk bsa sp sp ep) [0..]
-    --   print( length mymap)
-     let mycheats = concat $ map (cheats 20 mymap) $ M.keys mymap
+     -- print( length mymap)
+     let !ch =  map (cheats 20 mymap) (M.keys mymap)  `S.using` S.parListChunk 100 S.rdeepseq
+     let mycheats = concat ch
      return (toInteger . length . filter (>=100) $ mycheats )
