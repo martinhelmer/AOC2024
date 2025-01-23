@@ -117,6 +117,6 @@ part2 s = do
      let ep = fromMaybe (error "E does not exist") $ BSA.elemIndex bsa 'E'
      let mymap = M.fromList $ zip  (walk bsa sp sp ep) [0..]
      -- print( length mymap)
-     let !ch =  map (cheats 20 mymap) (M.keys mymap)  `S.using` S.parListChunk 100 S.rdeepseq
+     let !ch =  map (cheats 20 mymap) (M.keys mymap)   `S.using` S.parListChunk 100 S.rdeepseq
      let mycheats = concat ch
      return (toInteger . length . filter (>=100) $ mycheats )

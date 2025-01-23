@@ -5,16 +5,18 @@
 
 module Day01 (runme, runex) where
 
-import Text.RawString.QQ
-import AOCHelper
+import Text.RawString.QQ (r)
+import AOCHelper ( readInpByteSTring )
 import Data.List (sort)
-import qualified Data.IntMap as M
-import Data.Maybe ( fromMaybe )
+import qualified Data.IntMap.Strict as M
+import Data.Maybe ( fromMaybe, fromJust )
 
-import RunUtil (runMeString, RunMe)
+import RunUtil (runMeByteString, RunMe)
+import Data.ByteString (ByteString)
+import qualified Data.ByteString.Char8 as BS
 runme :: RunMe
-runme = runMeString "--- Day 1: Historian Hysteria ---"
-              (readInp "day01.txt")
+runme = runMeByteString "--- Day 1: Historian Hysteria ---"
+              (readInpByteSTring "day01.txt")
               (fmap toInteger . part1)
               (Just 2430334)
               (fmap toInteger . part2)
@@ -23,7 +25,7 @@ runme = runMeString "--- Day 1: Historian Hysteria ---"
 
 runex :: RunMe
 runex =
-    runMeString
+    runMeByteString
         "Day 1 - example"
         (return example)
         (fmap toInteger . part1)
@@ -31,7 +33,7 @@ runex =
         (fmap toInteger . part2)
         (Just 31)
 
-example :: String
+example :: ByteString
 example = [r|3   4
 4   3
 2   5
@@ -51,16 +53,18 @@ unzip' (x:xs) = (a:l1, b:l2)
     where (l1,l2) = unzip' xs
           [a,b] = x
 
-sTol1l2 :: String -> ([Int], [Int])
-sTol1l2 = unzip' . map (map read . words) . lines
-
-part1 :: String -> IO Int
+part1 :: ByteString -> IO Int
 part1 s = do
-    let (l1,l2) = sTol1l2 s
+    let (l1,l2) = bsTol1l2 s
     return $ sum $ zipWith (\a b -> abs (a-b)) (sort l1) (sort l2)
 
-part2 :: String -> IO Int
+bsTol1l2 :: ByteString -> ([Int], [Int])
+bsTol1l2 = unzip' . map (map (fst . fromJust . BS.readInt) . BS.words) . BS.lines
+
+part2 :: ByteString -> IO Int
 part2 s = do
-    let (l1,l2) = sTol1l2 s
+    let (l1,l2) = bsTol1l2 s
     let counts = map (fromMaybe 0 . (`M.lookup` frequencies l2)) l1
     return $ sum $ zipWith (*) l1 counts
+
+-- 18 ms gain from switching from String to Bytestring

@@ -104,7 +104,7 @@ doN i n = let nn = doN (nxt i) (n-1) in nn
 part1 :: ByteString -> IO Integer
 part1 s = do
     let !numbers = map (read . BS.unpack) $ BS.lines s::[In]
-        !ss = map (`doN` 2000) numbers  `S.using` S.parListChunk 32 S.rdeepseq
+        !ss = map (`doN` 2000) numbers  --`S.using` S.parListChunk 32 S.rdeepseq
     return . toInteger . sum $ ss
 
 ---
@@ -146,12 +146,11 @@ geta numbers = accumArray (\ _ x -> x) 0 ((0,0),(length numbers, 19^4::Int)) (mk
 part2 :: ByteString -> IO Integer
 part2 s = do
      let numbers = map (read . BS.unpack) $ BS.lines s::[In] 
-         v = map mkvector  numbers
         --  [a,b,c,d] = chunksOf 385 v
         --  total = let fa = foldsum a 
         --              fb = foldsum b
         --              fc = foldsum c
         --              fd = foldsum d
         --              in fa `par` fb `par` fc `par` fd `pseq` foldsum [fa,fb,fc,fd]
-         total = foldsum v 
+         !total = foldsum . map mkvector $ numbers
      return . toInteger $ V.maximum total

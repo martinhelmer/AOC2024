@@ -35,13 +35,13 @@ import Data.Map (Map)
 -- import Data.Map (IntMap)
 import Data.Set (Set, (\\))
 import qualified Data.Set as S
-import qualified Data.Map as M
-import qualified Data.Map as MAP
+import qualified Data.HashMap.Strict as M
 import Data.Maybe (catMaybes, mapMaybe, listToMaybe)
 import PosDir ( (.+.), (.->.), cardinalDirections, rr, rl, Dir (..), opposite, loc2int, int2loc  )
 import Data.List (foldl')
 import qualified Data.List as L
 import qualified Data.Bifunctor
+import Data.HashMap.Strict (HashMap)
 
 
 runex :: RunMe
@@ -96,7 +96,7 @@ AAAAAA|]
 
 type P = (Int,Int)
 type Color = Char
-type Canvas = Map P Color
+type Canvas = HashMap P Color
 type Members = Set P
 
 downUpRightLeft :: [(Int, Int)]
@@ -104,7 +104,7 @@ downUpRightLeft = [(0,1), (0,-1), (1,0), (-1,0)]
 
 
 paint :: Canvas -> Color -> P -> Members -> Members
-paint can col  p m = foldr (paint can col) (S.insert (p) m) (neighboringNewMembers)
+paint can col  p m = foldl' (flip (paint can col)) (S.insert (p) m) (neighboringNewMembers)
     where
         neighboringNewMembers = mapMaybe (mmm . (p .+.)) downUpRightLeft
         mmm loc
@@ -134,7 +134,7 @@ regions can =
 
 part1 :: ByteString -> IO Integer
 part1 s = do
-    let canvas =  BSA.toMap . BSA.makeBSarray $ s
+    let canvas =  BSA.toHashMap . BSA.makeBSarray $ s
     -- print (regions canvas)
     return . toInteger . sum . map price . regions $ canvas
 
@@ -147,7 +147,7 @@ price2 m = area * (sides m)
 
 part2 :: ByteString -> IO Integer
 part2 s = do
-    let canvas =  BSA.toMap . BSA.makeBSarray $ s
+    let canvas =  BSA.toHashMap . BSA.makeBSarray $ s
     -- return . toInteger . length $ r 
     return . toInteger . sum . map price2 . regions $ canvas
 

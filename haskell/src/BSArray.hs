@@ -20,6 +20,7 @@ module BSArray (BSArray
                , rawIndex
                , inRange 
                , toMap
+               , toHashMap
                ) where
 import Data.ByteString (ByteString)
 import Data.Hashable
@@ -27,6 +28,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.ByteString.Char8(append, singleton, take, drop)
 import Prelude hiding (take, drop)
 import qualified Data.Map as M 
+import qualified Data.HashMap.Strict as HM 
 
 type Index = (Int, Int)
 
@@ -108,6 +110,10 @@ indices bs = [(r,c) | r <- [0.. (rows bs -1)]  , c <- [0..(cols bs -1)]]
 
 toMap :: BSArray -> M.Map Index Char 
 toMap bs = M.fromList . map (\ix -> (ix, unsafeLookup bs ix)) . indices $ bs 
+
+toHashMap :: BSArray -> HM.HashMap Index Char 
+toHashMap bs = HM.fromList . map (\ix -> (ix, unsafeLookup bs ix)) . indices $ bs 
+
 
 row :: BSArray -> Int -> ByteString
 row bs rownum = let cols' = cols bs in
