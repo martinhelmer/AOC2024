@@ -12,13 +12,14 @@ module BSArray (BSArray
                , unsafeLookup
                , BSArray.elemIndex
                , elemIndices
-               , intIndex
+               , int2Index
+               , index2Int
                , stringColsFromLeft
                , bsColsFromLeft
                , unpackRows
                , rawIndex2Index
                , rawIndex
-               , inRange 
+               , inRange
                , toMap
                , toHashMap
                ) where
@@ -27,8 +28,8 @@ import Data.Hashable
 import qualified Data.ByteString.Char8 as B
 import Data.ByteString.Char8(append, singleton, take, drop)
 import Prelude hiding (take, drop)
-import qualified Data.Map as M 
-import qualified Data.HashMap.Strict as HM 
+import qualified Data.Map as M
+import qualified Data.HashMap.Strict as HM
 
 type Index = (Int, Int)
 
@@ -75,7 +76,7 @@ lookup (BSArray s _ (Col cols')) (ir, ic) | ir < 0 = error "Negative row index!"
                                           | ic < 0 = error "Negative column index!"
                                           | otherwise = B.index s (ic + ir * (cols' +1))
 
-inRange :: BSArray -> Index -> Bool 
+inRange :: BSArray -> Index -> Bool
 inRange bsa (ir,ic) = not (ir < 0 || ir >= rows bsa || ic < 0 || ic >= cols bsa)
 
 lookupMaybe :: BSArray -> Index -> Maybe Char
@@ -83,6 +84,7 @@ lookupMaybe a@(BSArray s (Row rows') (Col cols')) (ir, ic)
     | not (inRange a (ir,ic))= Nothing
     | otherwise = Just (B.index s (ic + ir * (cols' +1)))
 
+-- | Array index -> (row,col)
 rawIndex2Index :: BSArray -> Int -> Index
 rawIndex2Index bs ix = (ix `div` (cols bs + 1 ), ix `rem` (cols bs + 1 ))
 
@@ -96,9 +98,14 @@ elemIndex bs c =rawIndex2Index bs <$> B.elemIndex c (contents bs)
 elemIndices :: Char -> BSArray -> [Index]
 elemIndices  c bs = map (rawIndex2Index bs) $ B.elemIndices c (contents bs)
 
-intIndex :: BSArray -> Index -> Int
-intIndex bs (row', col) = (cols bs * row') + col
+-- | (row, col) -> Int
+index2Int :: BSArray -> Index -> Int
+index2Int bs (row', col) = (cols bs * row') + col
 
+int2Index :: BSArray -> Int -> Index
+int2Index bs ix = ix `divMod` cols bs
+
+-- | (row,col) -> raw array index
 rawIndex :: BSArray -> Index -> Int
 rawIndex bs (row', col) = ((cols bs +1 ) * row') + col
 
@@ -108,11 +115,11 @@ length' bs = B.length (contents bs )
 indices :: BSArray -> [Index]
 indices bs = [(r,c) | r <- [0.. (rows bs -1)]  , c <- [0..(cols bs -1)]]
 
-toMap :: BSArray -> M.Map Index Char 
-toMap bs = M.fromList . map (\ix -> (ix, unsafeLookup bs ix)) . indices $ bs 
+toMap :: BSArray -> M.Map Index Char
+toMap bs = M.fromList . map (\ix -> (ix, unsafeLookup bs ix)) . indices $ bs
 
-toHashMap :: BSArray -> HM.HashMap Index Char 
-toHashMap bs = HM.fromList . map (\ix -> (ix, unsafeLookup bs ix)) . indices $ bs 
+toHashMap :: BSArray -> HM.HashMap Index Char
+toHashMap bs = HM.fromList . map (\ix -> (ix, unsafeLookup bs ix)) . indices $ bs
 
 
 row :: BSArray -> Int -> ByteString

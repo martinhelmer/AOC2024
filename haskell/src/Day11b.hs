@@ -8,7 +8,7 @@ module Day11b (runme, runex) where
 
 import GHC.Exts
 import Text.RawString.QQ
-import qualified Data.IntMap as IM
+import qualified Data.IntMap.Strict as IM
 import Control.Applicative
 import qualified Data.Attoparsec.ByteString.Char8 as AP
 import Data.Attoparsec.ByteString.Char8 (

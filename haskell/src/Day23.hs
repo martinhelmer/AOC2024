@@ -1,37 +1,25 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns -Wunused-top-binds #-}
-{-# OPTIONS_GHC -Wno-unused-top-binds #-}
-{-# OPTIONS_GHC -Wno-unused-imports #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
+{-# LANGUAGE PackageImports #-}
+{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 
 module Day23 (runme, runex) where
 
 import Text.RawString.QQ
 
-import Control.Applicative
 import qualified Data.Attoparsec.ByteString.Char8 as AP
-import Data.Attoparsec.ByteString.Char8 (
-  Parser,
-  decimal,
-  endOfInput,
-  endOfLine,
-  isDigit,
-  many1,
-  parseOnly,
-  skipSpace,
-  skipWhile,
- )
+import Data.Attoparsec.ByteString.Char8 (Parser)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as BS
 
 
 import RunUtil (RunMe, runMeByteString)
-import AOCHelper (readInpByteSTring, Pos, Dir, tp, stringlisthash)
-import qualified BSArray as BSA
-import qualified Data.Map as M 
-import qualified Data.Set as S 
+import AOCHelper (readInpByteSTring, stringlisthash)
+import qualified Data.HashMap as M 
+import qualified "hashmap" Data.HashSet as S 
 import Data.List (sort)
 import Data.Foldable (foldl')
 import Data.Containers.ListUtils (nubOrd)
@@ -100,10 +88,11 @@ triples m (s1, s2) = let common = S.intersection (m M.! s1) (m M.! s2)
             in map (\e -> (\[a, b, c] -> (a,b,c)) $ sort [s1, s2, e]) (filter (\e -> s1s2hast || (head e == 't')) $ S.toList common)
             where s1s2hast = (head s1 == 't' || head s2 == 't')
 
-mkGraph :: Ord a => [(a, a)] -> M.Map a (S.Set a)
+mkGraph :: [(String, String)] -> M.Map String (S.Set String)
 mkGraph l = let ll = l ++ map (\t -> (snd t, fst t)) l
             in foldl' (\m (k,e) -> M.insertWith S.union k (S.singleton e) m)  M.empty $ ll
 
+pair :: Parser [Char]
 pair = BS.unpack <$> AP.take 2 
 
 parsePair :: Parser (String, String)
@@ -122,12 +111,13 @@ part1 s = do
     -- print (ttsets)
     return . toInteger . length $ ttsets
  
+setsize :: M.Map String (S.Set String) -> [S.Set String]
 setsize m  = foldl' go [] (M.assocs m)
-
-go [] (k,_) = [S.singleton k ]
-go (s:xs) (k,this) = dos : go xs (k,this) 
-    where dos | S.intersection s this == s = S.insert k s 
-              | otherwise = s 
+    where
+        go [] (k,_) = [S.singleton k ]
+        go (s:xs) (k,this) = dos : go xs (k,this) 
+            where dos | S.intersection s this == s = S.insert k s 
+                      | otherwise = s 
 
 
 part2 :: ByteString -> IO Integer
@@ -135,7 +125,7 @@ part2 s  = do
     let pairs = map (parse' parsePair) $ BS.lines s 
         graph = mkGraph pairs
         sets =  (setsize graph)
-        largest = foldl' (\s s2 -> if length s2 > length s then s2 else s) S.empty sets 
+        largest = foldl' (\s1 s2 -> if S.size s2 > S.size s1 then s2 else s1) S.empty sets 
     -- print (sort $ S.toList largest)
     return $ stringlisthash (sort $ S.toList largest)
 

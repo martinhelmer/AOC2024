@@ -6,6 +6,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
 {-# HLINT ignore "Use tuple-section" #-}
+{-# LANGUAGE PackageImports #-}
 
 module Day12 (runme, runex) where
 
@@ -34,14 +35,17 @@ import qualified BSArray as BSA
 import Data.Map (Map)
 -- import Data.Map (IntMap)
 import Data.Set (Set, (\\))
-import qualified Data.Set as S
+import qualified Data.Set as SS
+import qualified Data.IntSet as S
 import qualified Data.HashMap.Strict as M
 import Data.Maybe (catMaybes, mapMaybe, listToMaybe)
-import PosDir ( (.+.), (.->.), cardinalDirections, rr, rl, Dir (..), opposite, loc2int, int2loc  )
+import PosDir ( (.+.), (.->.), cardinalDirections, rr, rl, Dir (..), opposite, loc2int, int2loc, Loc  )
 import Data.List (foldl')
 import qualified Data.List as L
 import qualified Data.Bifunctor
 import Data.HashMap.Strict (HashMap)
+import BSArray (BSArray)
+import qualified BSArray as BSA
 
 
 runex :: RunMe
@@ -97,63 +101,61 @@ AAAAAA|]
 type P = (Int,Int)
 type Color = Char
 type Canvas = HashMap P Color
-type Members = Set P
+type Members = S.IntSet
 
 downUpRightLeft :: [(Int, Int)]
 downUpRightLeft = [(0,1), (0,-1), (1,0), (-1,0)]
 
 
-paint :: Canvas -> Color -> P -> Members -> Members
-paint can col  p m = foldl' (flip (paint can col)) (S.insert (p) m) (neighboringNewMembers)
+paint :: BSArray -> S.IntSet -> Color -> P -> Members -> Members
+paint bsa can col  p m = foldl' (flip (paint bsa can col)) (S.insert (ix2i p) m) (neighboringNewMembers)
     where
+        ix2i = BSA.index2Int bsa
+        neighboringNewMembers :: [P]
         neighboringNewMembers = mapMaybe (mmm . (p .+.)) downUpRightLeft
+        mmm :: P -> Maybe P
         mmm loc
-            |  S.member ( loc) m = Nothing
-            |  (Just col') <- (M.lookup (loc) can)  = if col' == col then Just loc else Nothing
+            |  S.member (ix2i loc) m = Nothing
+            |  (Just col') <- (BSA.lookupMaybe bsa (loc))  = if col' == col then Just loc else Nothing
             | otherwise = Nothing
 
-
-price :: Members -> Int
-price m = area * perimeter
+price :: BSArray -> Members -> Int
+price bsa m = area * perimeter
     where area = S.size m
-          perimeter = sum . map (\p -> 4 - neighbors (p)) $ (S.elems m)
-          neighbors p = length . filter (\d -> S.member ((p .+. d)) m) $ downUpRightLeft
+          perimeter = sum (map ((\p -> 4 - neighbors (p)) . BSA.int2Index bsa) (S.toList m))
+          neighbors p = length . filter (\d -> S.member (BSA.index2Int bsa (p .+. d)) m) $ downUpRightLeft
 ---
-delmany' :: Canvas -> Members -> Canvas
-delmany' c m = foldl' (flip M.delete)  c (S.toList m)
 
-delmany :: Canvas -> Members -> Canvas
-delmany c = M.difference c . M.fromList . map (\t -> (t,undefined))  . S.toList
-
-
-regions :: Canvas -> [Members]
-regions can =
-    case listToMaybe  . M.toList $ can of
+regions :: BSArray -> S.IntSet -> [Members]
+regions bsa can =
+    case listToMaybe  . S.toList $ can of
         Nothing -> []
-        Just (p, c) -> let region = paint can c (p) S.empty in region : regions (delmany' can region)
+        Just p' -> let p = (BSA.int2Index bsa p')
+                       region = paint bsa can (BSA.lookup bsa p) (p) S.empty in region : regions bsa  (S.difference can region)
 
 part1 :: ByteString -> IO Integer
 part1 s = do
-    let canvas =  BSA.toHashMap . BSA.makeBSarray $ s
-    -- print (regions canvas)
-    return . toInteger . sum . map price . regions $ canvas
+    let bsa = BSA.makeBSarray $ s
+        bsapoints = S.fromList $ map (BSA.index2Int bsa) (BSA.indices bsa)
+    return . toInteger . sum . map (price bsa) $ regions bsa bsapoints
 
 -- m2im :: (Map BSA.Index Char) -> IntMap Char
 -- m2im = M.fromList . map (Data.Bifunctor.first loc2int) . MAP.toList
 
-price2 :: Members -> Int
-price2 m = area * (sides m)
-    where area = S.size m
+price2 :: BSArray -> Members -> Int
+price2 bsa m = area * (sides (SS.fromList (map (BSA.int2Index bsa) $ S.toList m)))
+             where area = S.size m
 
 part2 :: ByteString -> IO Integer
 part2 s = do
-    let canvas =  BSA.toHashMap . BSA.makeBSarray $ s
-    -- return . toInteger . length $ r 
-    return . toInteger . sum . map price2 . regions $ canvas
+    let bsa = BSA.makeBSarray $ s
+        bsapoints = S.fromList $ map (BSA.index2Int bsa) (BSA.indices bsa)
+    return . toInteger . sum . map (price2 bsa) $ regions bsa bsapoints
 
-sides :: Members -> Int
-sides m = (sum (map (countcorners m) (S.toList m))) `div` 2
-countcorners :: Members -> P -> Int
+sides :: SS.Set P -> Int
+sides m = (sum (map (countcorners m) (SS.toList m))) `div` 2
+
+countcorners :: SS.Set P -> P -> Int
 countcorners m p =
         case sides' of
             [] -> 0
@@ -163,6 +165,6 @@ countcorners m p =
             [side1, side2] -> if (side1 == (opposite side2)) then checkallcorners
                               else 2 + checkcorner side1 (rl side1) + checkcorner side2 (rr side2)
             l -> let unside = head (cardinalDirections L.\\ l) in 4 + checkcorner unside (rr unside) + checkcorner unside (rl unside)
-    where sides' = filter (\d -> not . S.member ( (p .->. d)) $ m) cardinalDirections
-          checkcorner s1 s2 = if S.member ( (p .->. s1 .->. s2)) m then 1 else 0
-          checkallcorners = length . filter (\l -> S.member ( (p .+. l)) m)  $ [(-1,-1), (-1,1), (1,1), (1,-1)]
+    where sides' = filter (\d -> not . SS.member ( (p .->. d)) $ m) cardinalDirections
+          checkcorner s1 s2 = if SS.member ( (p .->. s1 .->. s2)) m then 1 else 0
+          checkallcorners = length . filter (\l -> SS.member ( (p .+. l)) m)  $ [(-1,-1), (-1,1), (1,1), (1,-1)]

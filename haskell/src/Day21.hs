@@ -5,12 +5,14 @@
 {-# OPTIONS_GHC -Wno-unused-imports #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
+{-# LANGUAGE BangPatterns #-}
 
 module Day21 (runme, runex) where
 
 import Text.RawString.QQ
 
 import Control.Applicative
+import qualified Control.Parallel.Strategies as S
 import qualified Data.Attoparsec.ByteString.Char8 as AP
 import Data.Attoparsec.ByteString.Char8 (
   Parser,
@@ -159,7 +161,9 @@ digitPadPaths s = concat $ zipWith (fs') ('A':s) s
     where fs' f t=  head $ findshortest' True nf1 d1 f t
 
 padLength ::  Int -> [Char] -> Int
-padLength n s = let p =  digitPadPaths s  in sum (zipWith ((expandedLength n)) ('A':p) p)
+padLength n s = let p =  digitPadPaths s  
+                    !l = (zipWith ((expandedLength n)) ('A':p) p) `S.using` S.parList S.rseq 
+                in sum l 
 
 expandedLength :: Int -> Char -> Char -> Int
 expandedLength = memoize3 expandedLength'
@@ -182,4 +186,5 @@ part1 s = do
 part2 :: ByteString -> IO Integer
 part2 s = do
     let codes = map (BS.unpack) $ BS.lines s
-    return . toInteger . sum $ (map (\code -> (padLength 25 code) * (numcode code)) codes)
+    let !ls = (map (\code -> (padLength 25 code) * (numcode code)) codes) `S.using` S.parListChunk 1 S.rseq 
+    return . toInteger . sum $ ls

@@ -6,7 +6,7 @@
 module Day11 (runme, runex) where
 
 import Text.RawString.QQ
-import qualified Data.IntMap as IM
+import qualified Data.IntMap.Strict as IM
 import Control.Applicative
 import qualified Data.Attoparsec.ByteString.Char8 as AP
 import Data.Attoparsec.ByteString.Char8 (
@@ -74,23 +74,23 @@ blink1' ((x,n):xs)  | x == 0 = (1,n) : blink1' xs
                     | x <= 999999999999 = (x `div` 1000000,n):(x `mod` 1000000,n):blink1' xs
                     | otherwise = undefined
 
-blink :: IM.IntMap Integer -> IM.IntMap Integer
+blink :: IM.IntMap Int -> IM.IntMap Int
 blink  = IM.fromListWith (+) . blink1' . IM.toList
 
-blinkTwice :: IM.IntMap Integer -> IM.IntMap Integer
+blinkTwice :: IM.IntMap Int -> IM.IntMap Int
 blinkTwice  = IM.fromListWith (+) . blink1' . blink1' . IM.toList
 
 -- ugly parse. 
-parse :: ByteString -> [(Int,Integer)]
+parse :: ByteString -> [(Int,Int)]
 parse = map (\t -> (fst t,1)) . mapMaybe BS.readInt . BS.splitWith (== ' ')
 ---
 
-go :: Int -> [(IM.Key, Integer)] -> Integer
+go :: Int -> [(IM.Key, Int)] -> Int
 go n l = sum $  IM.elems $ if even n then m1 else blink m1
     where m1 = iterate blinkTwice (IM.fromList l) !! max 0 (n `div` 2)
 
 part1 :: ByteString -> IO Integer
-part1  = return . go 25 . parse
+part1  =  return . toInteger . go 25 . parse
 
 part2 :: ByteString -> IO Integer
-part2  = return . go 75 . parse
+part2  = return . toInteger . go 75 . parse
