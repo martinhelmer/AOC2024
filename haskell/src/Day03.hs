@@ -64,7 +64,7 @@ runex =
 runme :: RunMe
 runme =
   runMeByteString
-    "--- Day 3: Mull It Over ---"
+    "-- Day 3: Mull It Over"
     (readInpByteSTring "day03.txt")
     part1
     (Just 166357705)

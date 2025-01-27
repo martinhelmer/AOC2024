@@ -2,7 +2,6 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns -Wunused-top-binds #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
-{-# OPTIONS_GHC -Wno-unused-imports #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# LANGUAGE TupleSections #-}
 
@@ -10,28 +9,14 @@ module Day10 (runme, runex) where
 
 import Text.RawString.QQ
 
-import Control.Applicative
-import qualified Data.Attoparsec.ByteString.Char8 as AP
-import Data.Attoparsec.ByteString.Char8 (
-  Parser,
-  decimal,
-  endOfInput,
-  endOfLine,
-  isDigit,
-  many1,
-  parseOnly,
-  skipSpace,
-  skipWhile,
- )
 import Data.ByteString (ByteString)
-import qualified Data.ByteString.Char8 as BS
 
 
 import RunUtil (RunMe, runMeByteString)
-import AOCHelper (readInpByteSTring, Pos, Dir, tp)
+import AOCHelper (readInpByteSTring)
 import qualified BSArray as BSA
 import BSArray (makeBSarray, Index, BSArray)
-import Data.Maybe (mapMaybe, catMaybes)
+import Data.Maybe (mapMaybe)
 import PosDir ((.+.))
 import Data.Containers.ListUtils (nubOrd)
 
@@ -60,7 +45,7 @@ runex =
 runme :: RunMe
 runme =
   runMeByteString
-    "--- Day 10: Hoof It ---"
+    "-- Day 10: Hoof It ---"
     (readInpByteSTring "day10.txt")
     part1
     (Just 796)
@@ -81,7 +66,7 @@ peaks grid (p, c) | c == '9' = [p]
                   | otherwise = concatMap (peaks grid ) $ stepUp grid (p, c)
 
 
-go :: (Monad m, Foldable t) => ByteString -> ([Index] -> t a) -> m Integer
+go :: ByteString -> ([Index] -> [Index]) -> IO Integer
 go s op = do
     let grid = makeBSarray s
     let trailheads = map (, '0') (BSA.elemIndices '0' grid)

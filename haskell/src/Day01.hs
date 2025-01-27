@@ -15,7 +15,7 @@ import RunUtil (runMeByteString, RunMe)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as BS
 runme :: RunMe
-runme = runMeByteString "--- Day 1: Historian Hysteria ---"
+runme = runMeByteString "-- Day 1: Historian Hysteria"
               (readInpByteSTring "day01.txt")
               (fmap toInteger . part1)
               (Just 2430334)

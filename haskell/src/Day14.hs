@@ -4,6 +4,7 @@
 {-# OPTIONS_GHC -Wno-unused-imports #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
+{-# LANGUAGE BangPatterns #-}
 
 module Day14 (runme, runex) where
 
@@ -143,7 +144,7 @@ var (mx, my) = sum . map dz
 
 findvarminimums :: [[Robot]] -> (Int, Int)
 findvarminimums inf = (xmin, ymin)
-      where vars =  zip (map (\r -> (variance . map xval $ r, variance . map yval $ r)) inf) [0..]
+      where !vars =  zip (map (\r -> (variance . map xval $ r, variance . map yval $ r)) inf) [0..103]
             xmin = snd $ minimumBy (compare `on` (fst . fst)) $ take 101 vars
             ymin = snd $ minimumBy (compare `on` (snd . fst)) $ take 103 vars
 
@@ -168,7 +169,8 @@ go2 z s = do
   return . toInteger . head . (mapMaybe (isIntSol (findvarminimums infinity) z )) $ [0..]
 
 variance :: [Int]  -> Float
-variance l = (sum . map (\v -> (v - average)^2) $ fl ) / (fromIntegral (length fl))
+variance l = (sum . map (\v -> (v - average)^(2::Int)) $ fl ) / len
     where fl = map fromIntegral l :: [Float]
-          average = (sum fl) / fromIntegral (length fl)
+          len = fromIntegral (length l)
+          average = (fromIntegral . sum $ l) / len 
 

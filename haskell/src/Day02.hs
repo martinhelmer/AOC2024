@@ -19,6 +19,7 @@ import qualified Data.ByteString.Char8 as BS
 import Data.List ( inits, tails )
 import RunUtil (RunMe, runMeByteString)
 import AOCHelper (readInpByteSTring)
+import Data.Maybe (fromJust)
 
 parse' :: Parser b -> ByteString -> b
 parse' p s = either (error . show) id $ AP.parseOnly (p <* AP.endOfInput) s
@@ -45,7 +46,7 @@ runex =
 runme :: RunMe
 runme =
   runMeByteString
-    "--- Day 2: Red-Nosed Reports ---."
+    "-- Day 2: Red-Nosed Reports"
     (readInpByteSTring "day02.txt")
     part1
     (Just 326)
@@ -54,13 +55,8 @@ runme =
 
 ---
 
--- parse :: ByteString -> [[Int]]
--- parse = map (map (fst . fromJust . BS.readInt) . BS.words) . BS.lines
-
--- slightly slower to use attoparsec instead of the above
 parse :: ByteString -> [[Int]]
-parse = map (parse' (decimal `sepBy1'` space)) . BS.lines
-
+parse = map (map (fst . fromJust . BS.readInt) . BS.words) . BS.lines
 
 isSafe :: [Int] -> Bool
 isSafe report = isSafe' Nothing (zipWith  (-) (tail report) report)       -- taking the diffs

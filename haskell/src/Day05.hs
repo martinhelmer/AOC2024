@@ -50,7 +50,7 @@ runex =
 runme :: RunMe
 runme =
   runMeByteString
-    "--- Day 5: Print Queue ---"
+    "-- Day 5: Print Queue ---"
     (readInpByteSTring "day05.txt")
     part1
     (Just 5064)

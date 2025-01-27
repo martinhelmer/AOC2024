@@ -57,7 +57,7 @@ runex =
 runme :: RunMe
 runme =
   runMeByteString
-    "--- Day 6: Guard Gallivant / hop ---"
+    "--- Day 6: Guard Gallivant / hop"
     (readInpByteSTring "day06.txt")
     part1
     (Just 5162)

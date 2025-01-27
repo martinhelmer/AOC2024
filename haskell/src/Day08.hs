@@ -62,7 +62,7 @@ runex =
 runme :: RunMe
 runme =
   runMeByteString
-    "--- Day 8: Resonant Collinearity ---"
+    "-- Day 8: Resonant Collinearity"
     (readInpByteSTring "day08.txt")
     part1
     (Just 400)

@@ -19,7 +19,7 @@ import qualified Data.ByteString.Char8 as BS
 import RunUtil (RunMe, runMeByteString)
 import AOCHelper (readInpByteSTring, stringlisthash)
 import qualified Data.HashMap as M 
-import qualified "hashmap" Data.HashSet as S 
+import qualified "unordered-containers" Data.HashSet as S 
 import Data.List (sort)
 import Data.Foldable (foldl')
 import Data.Containers.ListUtils (nubOrd)
@@ -83,12 +83,12 @@ runme =
 
 ---
 
-triples :: M.Map String (S.Set String) -> (String, String) -> [(String, String, String)]
+triples :: M.Map String (S.HashSet String) -> (String, String) -> [(String, String, String)]
 triples m (s1, s2) = let common = S.intersection (m M.! s1) (m M.! s2) 
             in map (\e -> (\[a, b, c] -> (a,b,c)) $ sort [s1, s2, e]) (filter (\e -> s1s2hast || (head e == 't')) $ S.toList common)
             where s1s2hast = (head s1 == 't' || head s2 == 't')
 
-mkGraph :: [(String, String)] -> M.Map String (S.Set String)
+mkGraph :: [(String, String)] -> M.Map String (S.HashSet String)
 mkGraph l = let ll = l ++ map (\t -> (snd t, fst t)) l
             in foldl' (\m (k,e) -> M.insertWith S.union k (S.singleton e) m)  M.empty $ ll
 
@@ -111,7 +111,7 @@ part1 s = do
     -- print (ttsets)
     return . toInteger . length $ ttsets
  
-setsize :: M.Map String (S.Set String) -> [S.Set String]
+setsize :: M.Map String (S.HashSet String) -> [S.HashSet String]
 setsize m  = foldl' go [] (M.assocs m)
     where
         go [] (k,_) = [S.singleton k ]

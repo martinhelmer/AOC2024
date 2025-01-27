@@ -35,6 +35,7 @@ import PosDir (Loc, (.->.), Dir (..))
 import Data.Maybe (fromJust)
 import Debug.Trace (trace)
 import qualified Data.ByteString as Bs
+import Data.List (foldl')
 
 runex :: RunMe
 runex =
@@ -149,18 +150,14 @@ move' (grid, loc) c =
 part1 :: ByteString -> IO Integer
 part1 s = do
     let (sp, grid, instr) = readInp s id
-    let (rg, _) = foldr (flip move) (grid, sp) (reverse $ BS.unpack instr)
+    let (rg, _) = BS.foldl' move (grid, sp) (instr)
     return . toInteger . sum . map gps . BSA.elemIndices 'O' $ rg
 
 -- 1491474 too high
 part2 :: ByteString -> IO Integer
 part2  s = do
     let (sp, grid, instr) = readInp s substitute
-    -- print (sp)
-    -- print (BSA.updateLoc grid sp '@')
-    let (rg, rp) = foldr ( flip move') (grid, sp) (reverse $ BS.unpack instr)
-    -- print ("---")
-    -- print (BSA.updateLoc rg rp '@')
+    let (rg, rp) = BS.foldl' move' (grid, sp) (instr)
     return . toInteger . sum . map gps . BSA.elemIndices '[' $ rg
 
 substitute :: ByteString -> ByteString
@@ -180,7 +177,9 @@ push loc dir grid = case (BSA.lookup grid nextpos) of
         '[' -> if  dir `elem` [WEST, EAST] then pushandmove else (pushandmove) >>= (push (loc .->. EAST .->. dir ) dir)
         ']' -> if  dir `elem` [WEST, EAST] then pushandmove else (pushandmove) >>= (push (loc .->. WEST .->. dir ) dir)
         _ -> undefined
-    where move'' from to grid' = BSA.updateLoc (BSA.updateLoc grid' from '.') to (BSA.lookup grid' from)
+    where move'' from to grid' = 
+              let fromv = (BSA.lookup grid' from) in 
+                  if fromv == '.' then grid' else BSA.updateLoc (BSA.updateLoc grid' from '.') to fromv
           pushandmove =  (move'' loc nextpos) <$> (push nextpos dir grid) 
           nextpos = loc .->. dir
   

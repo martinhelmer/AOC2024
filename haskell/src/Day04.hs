@@ -59,7 +59,7 @@ runex =
 runme :: RunMe
 runme =
   runMeByteString
-    "--- Day 4: Ceres Search ---"
+    "-- Day 4: Ceres Search ---"
     (readInpByteSTring "day04.txt")
     part1
     (Just 2462)
@@ -79,10 +79,10 @@ tk :: BSA.BSArray -> [Selection] -> (Int, Int) -> [String]
 tk bs searchdirs p = mapMaybe ( mapM (discardX . BSA.lookupMaybe bs . (p .+.))) searchdirs
     where discardX j = if j == Just 'X' then Nothing else j
 
-go :: Monad m => [Selection] -> (String -> Bool) -> Char -> ByteString -> m Integer
+go :: [Selection] -> (String -> Bool) -> Char -> ByteString -> IO Integer
 go searchdirs filt c s = do
     let bs = (BSA.makeBSarray s)
-    return  ( toInteger . length . concatMap (filter filt . (tk bs searchdirs)) $ (BSA.elemIndices c bs) )
+    return  ( toInteger . sum .  map (length . filter filt . (tk bs searchdirs)) $ (BSA.elemIndices c bs) )
 
 part1 :: ByteString -> IO Integer
 part1 = go ([(\ d -> take 3 $ iterate (d .+.) d) (x, y) |
