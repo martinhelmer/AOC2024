@@ -2,28 +2,20 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns -Wunused-top-binds #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
-{-# OPTIONS_GHC -Wno-unused-imports #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE PackageImports #-}
+{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 
 module Day19 (runme, runex) where
 
 import Text.RawString.QQ
 
-import Control.Applicative
 import qualified Data.Attoparsec.ByteString.Char8 as AP
 import Data.Attoparsec.ByteString.Char8 (
   Parser,
-  decimal,
-  endOfInput,
-  endOfLine,
-  isDigit,
   many1,
-  parseOnly,
-  skipSpace,
-  skipWhile,
   sepBy,
   letter_ascii
  )
@@ -32,12 +24,9 @@ import qualified Data.ByteString.Char8 as BS
 
 
 import RunUtil (RunMe, runMeByteString)
-import AOCHelper (readInpByteSTring, Pos, Dir, tp)
-import qualified BSArray as BSA
-import qualified "hashmap" Data.HashSet as S
-import qualified Data.Map as M
-import Debug.Trace (trace)
-import Data.Maybe (fromMaybe)
+import AOCHelper (readInpByteSTring)
+import qualified "unordered-containers" Data.HashSet as S
+import qualified Data.HashMap as M
 import Data.List (foldl')
 
 --
@@ -85,9 +74,10 @@ parseTowels = do
     words' <- (many1 letter_ascii) `sepBy` ", "
     return $ Towels (maximum . map length $ words') (S.fromList $ (map BS.pack) words')
 
-readInput s = let (x:y:xs) = BS.lines s in (parse' parseTowels x, xs)
+readInput :: ByteString -> (Towels, [ByteString])
+readInput s = let (x:_:xs) = BS.lines s in (parse' parseTowels x, xs)
 
-type TowelSet = S.Set ByteString
+type TowelSet = S.HashSet ByteString
 
 data Towels = Towels { maxlen :: Int
                      , towelset :: TowelSet} deriving (Eq, Show)
