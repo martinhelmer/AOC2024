@@ -1,47 +1,26 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# OPTIONS_GHC -Wno-unused-top-binds #-}
-{-# OPTIONS_GHC -Wno-unused-imports #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Day15b (runme, runex) where
 
 import Text.RawString.QQ
 
-import Control.Applicative
-import qualified Data.Attoparsec.ByteString.Char8 as AP
-import Data.Attoparsec.ByteString.Char8 (
-  Parser,
-  decimal,
-  endOfInput,
-  endOfLine,
-  isDigit,
-  many1,
-  parseOnly,
-  skipSpace,
-  skipWhile,
- )
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as BS
 
-
 import RunUtil (RunMe, runMeByteString)
-import AOCHelper (readInpByteSTring, Pos, tp, splitOnBs, parseIntoArray)
-import qualified BSArray as BSA
-import BSArray (BSArray)
+import AOCHelper (readInpByteSTring, splitOnBs, parseIntoArray)
 import PosDir (Loc, (.->.), Dir (..))
-import Data.Maybe (fromJust)
-import Debug.Trace (trace)
-import Data.List (foldl')
 import qualified Data.Array.Unboxed as A
 import qualified Data.Array.MArray as MA
+import Data.Array.MArray (thaw, freeze)
 import Control.Monad.ST (ST, runST)
-import Data.Array.ST (STArray, STUArray, mapArray)
-import qualified Data.Array.Base as MS
-import Control.Monad (foldM, foldM_, when)
-import Control.Monad.Loops (andM)
+import Data.Array.ST (STUArray)
+import Control.Monad (foldM, when)
 
 runex :: RunMe
 runex =
@@ -56,7 +35,7 @@ runex =
 runme :: RunMe
 runme =
   runMeByteString
-    "-- Day 15b: Warehouse Woes (Marray) ---"
+    "-- Day 15b: WarehouseWoes (Marr)"
     (readInpByteSTring "day15.txt")
     part1
     (Just 1451928)
@@ -103,21 +82,20 @@ example1 =
 |]
 
 type Grid = A.Array (Int,Int) Char
----
-parse' :: Parser b -> ByteString -> b
-parse' p s = either (error . show) id $ AP.parseOnly (p <* AP.endOfInput) s
+type STUGrid s= (STUArray s Loc Char)
 
-readInp :: ByteString -> (ByteString -> ByteString) -> (Loc, Grid, ByteString)
+---
+
+readInp :: ByteString -> (ByteString -> ByteString) -> (Loc, Grid, [Dir])
 readInp s sub | [a,b] <- splitOnBs "\n\n" (BS.init s) =
                     let grid = parseIntoArray (BS.unpack . sub $ a);
                         sp = fst . head $ filter (\(_,c) -> c == '@') $ A.assocs grid
-                    in  (sp,  grid A.// [(sp,'.')] , BS.concat $ BS.lines b)
+                    in  (sp,  
+                         grid A.// [(sp,'.')] , 
+                         map d . BS.unpack $ BS.concat $ BS.lines b)
 readInp _ _ =  error "unexpected input structure"
 
-tloc :: Loc -> Char -> Loc
-tloc loc c = loc .->. (d c)
-
-gps :: Num a => (a, a) -> a
+gps :: (Int, Int) -> Int
 gps (a,b) = 100 * a + b
 
 d :: Char -> Dir
@@ -128,41 +106,13 @@ d  = \case
   'v' -> SOUTH
   _ -> undefined
 
-part1 :: ByteString -> IO Integer
-part1 s = do
-    let (sp, grid, instr) = readInp s id
-        rg = runST (dogrid grid sp (BS.unpack instr))
+-- 
 
-    return . toInteger . sum . map (gps . fst) $ filter (\t -> (snd t) =='O') $ A.assocs rg
+part1 :: ByteString -> IO Integer
+part1  = go id 'O'
 
 part2 :: ByteString -> IO Integer
-part2  s = do
-    let (sp, grid, instr) = readInp s substitute
-    let rg = runST (dogrid grid sp (BS.unpack instr))
-    return . toInteger . sum . map (gps . fst) $ filter (\t -> (snd t) =='[') $ A.assocs rg
-
-----
-
-frz :: STUGrid s -> ST s Grid
-frz = MA.freeze
-
-thw :: Grid -> ST s (STUGrid s)
-thw = MA.thaw
-
----
-
-
-moveST :: (STUGrid s, Loc) -> Char -> ST s(STUGrid s, Loc)
-moveST (grid, loc) c = do
-    gg <- push loc (d c) grid
-    pure $ case gg of
-        Nothing -> (grid, loc)
-        Just grid' -> (grid',  (loc .->. (d c)))
-
-dogrid :: Grid -> Loc -> String -> ST s (Grid)
-dogrid grid sp instr =
-  thw grid >>= \g -> foldM moveST (g, sp) instr >>= frz . fst
-
+part2 = go  substitute '['
 
 substitute :: ByteString -> ByteString
 substitute = BS.pack . sub' . BS.unpack
@@ -174,51 +124,67 @@ substitute = BS.pack . sub' . BS.unpack
           sub' (x:xs) = x:(sub' xs)
 
 
-type STUGrid s= (STUArray s Loc Char)
+go ::  (ByteString -> ByteString) -> Char -> ByteString-> IO Integer
+go sub gpsOnChar  s= do
+    let (sp, grid, instr) = readInp s sub
+    return . toInteger 
+           . sum 
+           . map (gps . fst) 
+           . filter (\t -> (snd t) == gpsOnChar) 
+           . A.assocs 
+           $ (runST 
+                  (thaw grid >>=
+                   (\g -> foldM moveST (g,sp) instr) >>=
+                   freeze . fst
+                  ):: Grid)
 
-push :: Loc -> Dir -> (STUGrid s) -> (ST s (Maybe (STUGrid s)))
+moveST :: (STUGrid s, Loc) -> Dir -> ST s(STUGrid s, Loc)
+moveST (grid, loc) dir = do
+    (\gg -> (grid, if gg then (loc .->. dir) else loc))
+    <$> push loc dir grid
+
+push :: Loc -> Dir -> (STUGrid s) -> (ST s (Bool))
 push loc dir g = do
     gg <- MA.readArray g nextpos
     case (gg) of
-        '.' -> move'' loc nextpos g
-        '#' -> pure $ Nothing
+        '.' -> doMove loc nextpos g
+        '#' -> pure False
         'O' -> pushandmove
         '[' -> movebox EAST
         ']' -> movebox WEST
         _ -> undefined
     where nextpos = loc .->. dir
-          movebox d
+          movebox otherside
             | dir == WEST || dir == EAST = pushandmove
-            | otherwise = do
-                      ispush <- (andM [isPushable nextpos dir g, isPushable (nextpos  .->. d) dir g])                      
-                      if ispush then   
-                          (pushandmove >>= maybe (pure Nothing) (push (loc .->. d .->. dir ) dir))
-                      else 
-                          pure Nothing 
-          pushandmove =  do
-                p <- (push nextpos dir g)
-                case p of
-                    Nothing -> pure Nothing
-                    Just g -> move'' loc nextpos g
+            | otherwise = andM2
+                          (andM2 (isPushable nextpos dir g)
+                                 (isPushable (nextpos  .->. otherside) dir g))
+                          (andM2 pushandmove
+                                 (push (nextpos .->. otherside ) dir g))
+          pushandmove =  andM2 (push nextpos dir g) (doMove loc nextpos g)
 
--- 
-move'' :: Loc -> Loc -> STUGrid s -> (ST s (Maybe (STUGrid s)))
-move'' from to grid' = do
+doMove :: Loc -> Loc -> STUGrid s -> (ST s (Bool))
+doMove from to grid' = do
       fromv <- MA.readArray grid' from
-      if fromv == '.' then pure $ Just grid' else do
-                        MA.writeArray grid' from '.'
-                        MA.writeArray grid' to fromv
-                        pure $ Just grid'
+      when (fromv /= '.' ) (do
+          MA.writeArray grid' from '.'
+          MA.writeArray grid' to fromv)
+      pure True
 
 isPushable :: Loc -> Dir -> (STUGrid s) -> (ST s (Bool))
 isPushable loc dir g =
    let nextpos = loc .->. dir in
-   MA.readArray g nextpos >>= 
-     \case 
+   MA.readArray g nextpos >>=
+     \case
         '.' -> pure True
         '#' -> pure False
         'O' -> isPush' nextpos
-        '[' -> andM [isPush' nextpos, isPush' (nextpos .->. EAST)]
-        ']' -> andM [isPush' nextpos, isPush' (nextpos .->. WEST)]
+        '[' -> andM2 (isPush' nextpos) (isPush' (nextpos .->. EAST))
+        ']' -> andM2 (isPush' nextpos) (isPush' (nextpos .->. WEST))
         _ -> undefined
-    where isPush' p = isPushable p dir g 
+    where isPush' p = isPushable p dir g
+
+andM2 :: Monad m => m Bool -> m Bool -> m Bool
+andM2 x y = do
+  a <- x
+  if a then y else pure False
