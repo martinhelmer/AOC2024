@@ -70,7 +70,7 @@ runex =
 runme :: RunMe
 runme =
   runMeByteString
-    "-- Day 20: Race Condition / PAR + Vec --"
+    "-- Day 20: Race Cond. (PAR+Vec)"
     (readInpByteSTring "day20.txt")
     part1
     (Just 1263)

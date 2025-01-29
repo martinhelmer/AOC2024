@@ -36,19 +36,19 @@ runex =
   runMeByteString
     "Day 22 - example"
     (return example)
-    part1
+    (part1 . numbers')
     (Just 37327623)
-    part2
+    (part2 . numbers')
     (Just 24)
 
 runme :: RunMe
 runme =
   runMeByteString
-    "--- Day 22: Monkey Market (MVec) -"
+    "-- Day 22c: MonkeyMarket (MVec)"
     (readInpByteSTring "day22.txt")
-    part1
+    (part1 . numbers')
     (Just 13004408787)
-    part2
+    (part2 . numbers') 
     (Just 1455)
 
 type In = Int
@@ -66,19 +66,19 @@ doN :: In -> In -> In
 doN i 0 = i
 doN i n = doN (nxt i) (n-1)
 
-part1 :: ByteString -> IO Integer
-part1 s = do
-    let !numbers = map (read . BS.unpack) $ BS.lines s::[In]
-        !ss = map (`doN` 2000) numbers  `S.using` S.parListChunk 32 S.rdeepseq
+numbers' :: ByteString -> [In]
+numbers' s = map (read . BS.unpack) $ BS.lines s::[In]
+
+part1 :: [In] -> IO Integer
+part1 numbers = do
+    let !ss = map (`doN` 2000) numbers  `S.using` S.parListChunk 32 S.rdeepseq
     return . toInteger . sum $ ss
 
 
-part2 :: ByteString -> IO Integer
-part2 s = do
-     let numbers = map (read . BS.unpack) $ BS.lines s::[In]
-         vectors= runST (mkv numbers )
+part2 :: [In] -> IO Integer
+part2 numbers = do
+     let vectors= runST (mkv numbers )
      return . toInteger $ V.maximum vectors
-
 
 step :: ((Int,Int),Int)  ->  ((Int,Int),Int)
 step ((prevkey, prevv),prevseed) =

@@ -112,7 +112,7 @@ part1 s = do
     return . toInteger . length $ ttsets
  
 setsize :: M.Map String (S.HashSet String) -> [S.HashSet String]
-setsize m  = foldl' go [] (M.assocs m)
+setsize m  = foldl' go [] (reverse $ sort $ M.assocs m)
     where
         go [] (k,_) = [S.singleton k ]
         go (s:xs) (k,this) = dos : go xs (k,this) 
@@ -126,6 +126,7 @@ part2 s  = do
         graph = mkGraph pairs
         sets =  (setsize graph)
         largest = foldl' (\s1 s2 -> if S.size s2 > S.size s1 then s2 else s1) S.empty sets 
-    -- print (sort $ S.toList largest)
+    print (M.size graph)
+    print (sort $ S.toList largest)
     return $ stringlisthash (sort $ S.toList largest)
 

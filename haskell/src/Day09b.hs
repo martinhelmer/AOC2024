@@ -50,7 +50,7 @@ runex =
 runme :: RunMe
 runme =
   runMeByteString
-    "--- Day 9b: Disk Fragmenter (Vec) ---"
+    "--- Day 9b: Disk Frag. (Vec)"
     (readInpByteSTring "day09.txt")
     part1
     (Just 6471961544878)

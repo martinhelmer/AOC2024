@@ -65,7 +65,7 @@ runex =
 runme :: RunMe
 runme =
   runMeByteString
-    "-- Day 17: Chronospatial Computer   --"
+    "-- Day 17: Chronospatial Comp"
     (readInpByteSTring "day17.txt")
     part1
     (Just 350151510)

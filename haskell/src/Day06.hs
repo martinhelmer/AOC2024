@@ -49,9 +49,9 @@ runex =
   runMeByteString
     "Day 06 - example"
     (return example)
-    part1
+    (part1 . readInp)
     (Just 41)
-    part2
+    (part2 . readInp)
     (Just 6)
 
 runme :: RunMe
@@ -59,9 +59,9 @@ runme =
   runMeByteString
     "--- Day 6: Guard Gallivant / hop"
     (readInpByteSTring "day06.txt")
-    part1
+    (part1 . readInp)
     (Just 5162)
-    part2
+    (part2 . readInp)
     (Just 1909)
 
 ---
@@ -139,12 +139,21 @@ getEnv bsa  =
         dat elems =  V.map sort $ V.accum (flip (:)) (V.replicate (BSA.cols bsa) []) elems  
     in Env bsa (dat hashtags) (dat (map flipTuple hashtags))
 
-part1 :: ByteString -> IO Integer
-part1 s  = do
+readInp :: ByteString -> (Env, Pos)
+readInp s =
     let bsa = BSA.makeBSarray s
         env = getEnv bsa
-    let sp = Pos (fromJust $ BSA.elemIndex bsa '^') NORTH
-    return (toInteger . length . nubOrd . map (\(Just (Pos p _)) -> p) . takeWhile (isJust) $ iterate (>>= (dosmallstep env Nothing )) (Just sp) )
+        sp = Pos (fromJust $ BSA.elemIndex bsa '^') NORTH
+    in (env, sp) 
+    
+part1 :: (Env, Pos) -> IO Integer
+part1 (env, sp)  = do
+    return  . toInteger 
+            . length 
+            . nubOrd 
+            . map (\(Just (Pos p _)) -> p)
+            . takeWhile (isJust) 
+            $ iterate (>>= (dosmallstep env Nothing )) (Just sp)
 
 hasLoop :: Env -> Visited -> Pos -> Loc  -> Bool
 hasLoop env v sp l =  hasLoop' v (Just sp)
@@ -165,10 +174,6 @@ martin env accumblocks vloc visited currentpos =
                     ((pos2int currentpos) `IS.insert` visited)
                     nextp
 
-part2 :: ByteString -> IO Integer
-part2 s = do
-    let bsa = BSA.makeBSarray s
-        env = getEnv bsa 
-    let sp = Pos (fromJust $ BSA.elemIndex bsa '^') NORTH
-
+part2 :: (Env, Pos) -> IO Integer
+part2 (env, sp) = do
     return ( toInteger $ martin env 0 IS.empty IS.empty sp )
