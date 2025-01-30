@@ -28,7 +28,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as BS
 
 import RunUtil (RunMe, runMeByteString)
-import AOCHelper (readInpByteSTring, Pos, Dir, tp)
+import AOCHelper (readInpByteSTring)
 import qualified BSArray as BSA
 
 import Data.Map (Map)
@@ -134,11 +134,8 @@ regions can =
 part1 :: ByteString -> IO Integer
 part1 s = do
     let canvas =  BSA.toHashMap . BSA.makeBSarray $ s
-    -- print (regions canvas)
     return . toInteger . sum . map price . regions $ canvas
 
--- m2im :: (Map BSA.Index Char) -> IntMap Char
--- m2im = M.fromList . map (Data.Bifunctor.first loc2int) . MAP.toList
 
 price2 :: Members -> Int
 price2 m = area * (sides m)
