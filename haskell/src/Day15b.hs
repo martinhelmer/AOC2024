@@ -4,6 +4,7 @@
 {-# HLINT ignore "Redundant bracket" #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
 module Day15b (runme, runex) where
 

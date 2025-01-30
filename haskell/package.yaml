@@ -47,6 +47,7 @@ dependencies:
 - mtl
 - unordered-containers
 - memoize 
+- monad-loops
 
 ghc-options:
 - -Wall
@@ -60,6 +61,7 @@ ghc-options:
 - -Wredundant-constraints
 - -O2
 - -threaded
+
 
 library:
   source-dirs: src

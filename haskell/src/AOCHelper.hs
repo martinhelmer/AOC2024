@@ -9,6 +9,7 @@ import qualified Data.Vector.Unboxed as UV
 import qualified Data.Map as M
 import qualified Data.HashMap as HM
 import qualified Data.Array as A
+import qualified Data.Array.Unboxed as UA
 
 import Data.Maybe ( fromMaybe )
 import           Data.List.Split
@@ -108,6 +109,16 @@ parseIntoArray s = A.listArray bounds (concat l)
     where bounds = ((0,0),(length l -1,length (head l) -1))
           l = lines s
 
+parseIntoUArray :: [Char] -> UA.UArray (Int, Int) Char
+parseIntoUArray s = p UA.listArray s
+
+--  bounds (concat l)
+--     where bounds = ((0,0),(length l -1,length (head l) -1))
+--           l = lines s
+
+p f s = f bounds (concat l)
+    where bounds = ((0,0),(length l -1,length (head l) -1))
+          l = lines s
 
 parseIntoArrayWithBorder  :: Char -> [Char] -> A.Array (Int, Int) Char
 parseIntoArrayWithBorder c s = A.listArray bounds (replicate cols c ++ concat l ++ replicate cols c )

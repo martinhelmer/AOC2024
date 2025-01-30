@@ -7,7 +7,7 @@ import Data.List (sortBy)
 import Data.Function (on)
 import Control.Monad
 -- import Data.Time.Clock
-import System.TimeIt
+-- import System.TimeIt
 import Data.Bifunctor (first)
 import Data.Text.Format.Numbers (prettyI )
 import qualified Data.Text as T
@@ -31,18 +31,23 @@ import Day10
 import Day11 
 import Day11b 
 import Day12
+import Day12b
 import Day13 
 import Day14 
 import Day15 
+import Day15b
 import Day16 
 import Day17 
 import Day18 
 import Day19
-import Day20
+import Day20b
 import Day21
 import Day22
 import Day22b 
+import Day22c
 import Day23
+import Day23b
+
 import Day24 
 import Day25 
 import Data.Time (getCurrentTime, diffUTCTime, nominalDiffTimeToSeconds)
@@ -75,16 +80,20 @@ rmap = M.fromList
     , ("_10", Day10.runex)  
     , ("11", Day11.runme)
     , ("_11", Day11.runex)        
-    , ("11b", Day11b.runme)
+    , ("__11b", Day11b.runme)
     , ("_11b", Day11b.runex)   
-    , ("12", Day12.runme)
+    , ("__12", Day12.runme)
     , ("_12", Day12.runex) 
+    , ("12b", Day12b.runme)
+    , ("_12b", Day12b.runex) 
     , ("13", Day13.runme)
     , ("_13", Day13.runex)
     , ("14", Day14.runme)              
     , ("_14", Day14.runex)       
-    , ("15", Day15.runme)              
+    , ("__15", Day15.runme)              
     , ("_15", Day15.runex) 
+    , ("15b", Day15b.runme)              
+    , ("_15b", Day15b.runex) 
     , ("16", Day16.runme)              
     , ("_16", Day16.runex) 
     , ("17", Day17.runme)              
@@ -94,23 +103,25 @@ rmap = M.fromList
     , ("_18", Day18.runex)
     , ("19", Day19.runme)
     , ("_19", Day19.runex)
-    , ("20", Day20.runme)
-    , ("_20", Day20.runex)
+    , ("20b", Day20b.runme)
+    , ("_20b", Day20b.runex)
     , ("21", Day21.runme)
     , ("_21", Day21.runex)
-    , ("22", Day22.runme)
-    , ("_22", Day22.runex)
-    , ("22b", Day22b.runme)
-    , ("_22b", Day22b.runex)
-    , ("23", Day23.runme)
-    , ("_23", Day23.runex)
+    , ("_22", Day22.runme)
+    , ("_22b", Day22b.runme)
+    , ("22c", Day22c.runme)
+    , ("_22c", Day22c.runex)
+    , ("__23", Day23.runme)
+    , ("__23", Day23.runex)
+    , ("23b", Day23b.runme)
+    , ("_23b", Day23b.runex)
     , ("24", Day24.runme)
     , ("_24", Day24.runex)
     , ("25", Day25.runme)
     , ("_25", Day25.runex)    ]
 
 numruns :: Int
-numruns = 1
+numruns = 2
 
 doit :: Runner-> [RunMe] -> Shower -> IO ()
 doit runner jobs shower = forM_ jobs ( \job -> runner job >>= shower job >>= TI.putStrLn )
@@ -121,10 +132,10 @@ mySort = sortBy (compare `on` fst)
 sToR :: String -> IO ()
 sToR "ALL" = do
         _ <- doit (runmany 1) [Day03.runme] showNothing
-        TI.putStrLn "Haskell AOC 2024                         |  1    (micros)    2 |   1 + 2  |"
-        TI.putStrLn "-----------------------------------------+----------+----------+----------+--"
+        TI.putStrLn "Haskell AOC 2024                 |  1  (micros)    2 |  1 + 2  |"
+        TI.putStrLn "---------------------------------+---------+---------+---------+--"
         doit (runmany numruns) (map snd . filter (\t -> '_' `notElem` fst t ) . mySort . M.assocs $ rmap) showTabular
-        TI.putStrLn "-----------------------------------------+----------+----------+----------+--"
+        TI.putStrLn "---------------------------------+---------+---------+---------+--"
 sToR s = doit (runmany 1) [rmap M.! s] showVerbose
 
 f :: [String] -> IO (Double, ())
@@ -134,7 +145,7 @@ main :: IO ()
 main = do
     args <- getArgs
     f args >>= \t -> TI.putStrLn $
-                        "                                                        "
+                        "                                              "
                         <> color Blue "Total:"
                         <> " |"
                         <> color Blue (showDur 9 (fst t / fromIntegral numruns))
@@ -153,10 +164,10 @@ showNothing _ _ = pure "Warming up ... \n"
 
 showTabular :: RunMe -> ((Double, Integer), (Double, Integer)) -> IO Text
 showTabular env ((t1, r1), (t2, r2)) = pure $  T.intercalate " |"
-    [ T.justifyLeft 40 ' ' . T.pack . runMeTitle $ env
-    , showDur' 9 r1 (runMeExpected1 env) t1
-    , showDur' 9 r2 (runMeExpected2 env) t2
-    , showDur 9 (t1 + t2)
+    [ T.justifyLeft 32 ' ' . T.pack . runMeTitle $ env
+    , showDur' 8 r1 (runMeExpected1 env) t1
+    , showDur' 8 r2 (runMeExpected2 env) t2
+    , showDur 8 (t1 + t2)
     , ""
     ]
 
@@ -178,11 +189,10 @@ showVerbose env ((t1, r1), (t2, r2)) = do
         where sr p r xp t = T.unwords [ p,T.pack " = ", showResult 10 xp r , " (", T.justifyRight 15 ' ' . T.pack . show $ xp, ") dur:", showDur 10 t]
 
 timeItT' :: IO b -> IO (Double, b)
-timeItT' f = do 
+timeItT' f' = do 
     s <- getCurrentTime
-    a <- f
+    a <- f'
     e <- getCurrentTime
-
     return (realToFrac $ nominalDiffTimeToSeconds $ diffUTCTime e s, a) 
 
 runmany :: Int -> RunMe -> IO ((Double, Integer), (Double, Integer))
