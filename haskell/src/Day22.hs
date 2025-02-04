@@ -6,6 +6,9 @@
 {-# HLINT ignore "Redundant bracket" #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE TupleSections #-}
+{-# OPTIONS_GHC -Wno-unused-top-binds #-}
+{-# OPTIONS_GHC -Wno-type-defaults #-}
+{-# OPTIONS_GHC -Wno-unused-matches #-}
 
 module Day22 (runme, runex) where
 
@@ -112,24 +115,22 @@ doN' :: In -> In -> [In]
 doN' i 0 = []
 doN' i n = (i `mod` 10) : doN' (nxt i) (n-1)
 
-doNV :: In -> In -> Vector In
-doNV i n = V.iterateN n nxt i
 
 -- mkvector :: In -> Vector In
 -- mkvector n = let nv =  V.replicate (19^4) (0) in nv  `V.unsafeUpd` ( (get1' $ (doN' n 2001)))
 
 mkvector :: In -> Vector In
-mkvector n = let nv =  V.replicate (19^4) (0) in nv  `V.unsafeUpd` ( (get1' $ (doN' n 2001)))
+mkvector n = let nv =  V.replicate (19^4) (0) in nv  `V.unsafeUpd` ( (get1' (doN' n 2001)))
 
 
 mkone :: In -> In -> [((In, In), In)]
-mkone i n = map (\(ix,v) -> ((i,ix) ,v)) (get1' $ (doN' n 2001))
+mkone i n = map (\(ix,v) -> ((i,ix) ,v)) (get1' (doN' n 2001))
 
 mkmany :: [In] -> [((Int, Int), In)]
 mkmany = concat . zipWith (mkone) [0..]
 
 vlen :: Int
-vlen = 19^4
+vlen = 19^(4 :: Integer)
 
 foldsum :: [Vector In] -> Vector In
 foldsum = foldl' (\v1 v2 -> V.generate vlen (\i -> v1 `V.unsafeIndex` i + v2 `V.unsafeIndex` i)) (V.replicate vlen 0)

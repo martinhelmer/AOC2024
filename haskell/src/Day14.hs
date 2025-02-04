@@ -1,7 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns -Wunused-top-binds #-}
-{-# OPTIONS_GHC -Wno-unused-imports #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
 {-# LANGUAGE BangPatterns #-}
@@ -10,19 +9,11 @@ module Day14 (runme, runex) where
 
 import Text.RawString.QQ
 
-import Control.Applicative
 import qualified Data.Attoparsec.ByteString.Char8 as AP
 import Data.Attoparsec.ByteString.Char8 (
   Parser,
   decimal,
   signed,
-  endOfInput,
-  endOfLine,
-  isDigit,
-  many1,
-  parseOnly,
-  skipSpace,
-  skipWhile,
   string,
   char,
  )
@@ -31,9 +22,7 @@ import qualified Data.ByteString.Char8 as BS
 
 
 import RunUtil (RunMe, runMeByteString)
-import AOCHelper (readInpByteSTring, drawSparse, draw2dset)
-import PosDir (Pos, Loc, Dir)
-import qualified BSArray as BSA
+import AOCHelper (readInpByteSTring)
 import Data.Function (on)
 import Data.List (minimumBy)
 import Data.Ratio (denominator)

@@ -10,9 +10,6 @@ import Text.RawString.QQ
 import qualified Data.Attoparsec.ByteString.Char8 as AP
 import Data.Attoparsec.ByteString.Char8 (
   Parser,
-  decimal,
-  space,
-  sepBy1',
  )
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as BS

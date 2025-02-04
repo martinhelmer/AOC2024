@@ -1,33 +1,25 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns -Wunused-top-binds #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Redundant bracket" #-}
-{-# LANGUAGE PackageImports #-}
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 module Day23b (runme, runex) where
 
-import Text.RawString.QQ
-
-import qualified Data.Attoparsec.ByteString.Char8 as AP
+import AOCHelper (readInpByteSTring, stringlisthash)
 import Data.Attoparsec.ByteString.Char8 (Parser)
+import qualified Data.Attoparsec.ByteString.Char8 as AP
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as BS
-
-
-import RunUtil (RunMe, runMeByteString)
-import AOCHelper (readInpByteSTring, stringlisthash)
+import Data.Char (chr, ord)
+import Data.Containers.ListUtils (nubOrd)
+import Data.Foldable (foldl')
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
-
-
-import Data.List (sort, subsequences)
-import Data.Foldable (foldl')
-import Data.Containers.ListUtils (nubOrd)
-import Data.Char (ord, chr)
-import Data.Maybe (listToMaybe, catMaybes, mapMaybe)
-import Data.List (find)
+import Data.List (find, sort)
+import Data.Maybe (listToMaybe, mapMaybe)
+import RunUtil (RunMe, runMeByteString)
+import Text.RawString.QQ
 
 example :: ByteString
 example =
@@ -89,24 +81,29 @@ runme =
 intKey :: String -> Int
 intKey [] = 0
 intKey ['t', t] = 1000 + (ord t - ord 'a')
-intKey (x:xs) = 1 + ord x - ord 'a' + 28 * intKey xs
+intKey (x : xs) = 1 + ord x - ord 'a' + 28 * intKey xs
 
 keyInt :: Int -> [Char]
-keyInt n | n >= 1000 = ['t', chr (n - 1000 + ord 'a')]
-         | otherwise = let (h, l) = n `divMod` 28
-                    in [chr (l-1 + ord 'a'), chr (h - 1 + ord 'a')]
+keyInt n
+  | n >= 1000 = ['t', chr (n - 1000 + ord 'a')]
+  | otherwise =
+      let (h, l) = n `divMod` 28
+       in [chr (l - 1 + ord 'a'), chr (h - 1 + ord 'a')]
 
 triples :: IM.IntMap (IS.IntSet) -> (Int, Int) -> [(Int, Int, Int)]
-triples m (s1, s2) = let common = IS.intersection (m IM.! s1) (m IM.! s2)
-            in map (\e -> (\[a, b, c] -> (a,b,c)) $ sort [s1, s2, e]) (filter (\e ->  (e >= 1000)) $ IS.toList common)
-            where s1s2hast = s1 >= 1000  || s2 >= 1000
+triples m (s1, s2) =
+  let common = IS.intersection (m IM.! s1) (m IM.! s2)
+   in map
+        (\e -> (\[a, b, c] -> (a, b, c)) $ sort [s1, s2, e])
+        (filter (>= 1000) $ IS.toList common)
 
 mkGraph :: [(Int, Int)] -> IM.IntMap (IS.IntSet)
-mkGraph l = let ll = l ++ map (\t -> (snd t, fst t)) l
-            in foldl' (\m (k,e) -> IM.insertWith IS.union k (IS.singleton e) m)  IM.empty $ ll
+mkGraph l =
+  let ll = l ++ map (\t -> (snd t, fst t)) l
+   in foldl' (\m (k, e) -> IM.insertWith IS.union k (IS.singleton e) m) IM.empty $ ll
 
 pair :: Parser Int
-pair = (intKey . BS.unpack) <$> AP.take 2
+pair = intKey . BS.unpack <$> AP.take 2
 
 parsePair :: Parser (Int, Int)
 parsePair = (,) <$> pair <* AP.char '-' <*> pair
@@ -116,30 +113,47 @@ parse' p s = either (error . show) id $ AP.parseOnly (p <* AP.endOfInput) s
 
 part1 :: ByteString -> IO Integer
 part1 s = do
-    let pairs = map (parse' parsePair) $ BS.lines s
-        graph = mkGraph pairs
-        ttsets = nubOrd  $ concatMap (triples graph) pairs
-    return . toInteger . length $ ttsets
+  let pairs = map (parse' parsePair) $ BS.lines s
+      graph = mkGraph pairs
+      ttsets = nubOrd $ concatMap (triples graph) pairs
+  return . toInteger . length $ ttsets
 
-
-get n s | n ==0 = [[]]
-        | length s == n = [s]
-        | otherwise = (get n (tail s)) ++ map ((head s):) (get (n-1) (tail s))
-
-findN :: Int -> Int -> IM.IntMap IS.IntSet -> Maybe IS.IntSet
-findN n node graph =find fits subsets
-    where neighbors = graph IM.! node
-          subsets = map IS.fromList $ get n (IS.toList neighbors)
-          fits s =  all (\m -> IS.difference (IS.insert node s) (graph IM.! m) == IS.singleton m ) (IS.toList s)
+-- pick n elements from s. keep the order
+get :: Int -> [a] -> [[a]]
+get n s
+  | n == 0 = [[]]
+  | length s == n = [s]
+  | otherwise = get n (tail s) ++ map (head s :) (get (n - 1) (tail s))
 
 findNall :: IM.IntMap IS.IntSet -> Int -> Maybe IS.IntSet
-findNall g n = listToMaybe $ mapMaybe (\k -> (IS.insert k ) <$> findN n k g) (IM.keys g)
+findNall graph n =
+  listToMaybe
+    . mapMaybe (\k -> IS.insert k <$> findN k)
+    $ IM.keys graph
+  where
+    findN :: Int -> Maybe IS.IntSet
+    findN node = find fits subsets
+      where
+        neighbors = graph IM.! node
+        subsets = map IS.fromList $ get n (IS.toList neighbors)
+        fits s =
+          all
+            ( \m ->
+                IS.difference
+                  (IS.insert node s)
+                  (graph IM.! m)
+                  == IS.singleton m
+            )
+            (IS.toList s)
 
 part2 :: ByteString -> IO Integer
-part2 s  = do
-    let pairs = map (parse' parsePair) $ BS.lines s
-        graph = mkGraph pairs
-        fullone = head $ mapMaybe (findNall graph) (reverse [1..13])
-        all = (IS.toList (fullone))
-    return $ stringlisthash (sort $ map keyInt all)
-
+part2 s = do
+  let pairs = map (parse' parsePair) $ BS.lines s
+      graph = mkGraph pairs
+      biggestSet = head $ mapMaybe (findNall graph) (reverse [1 .. 13])
+  return
+    . stringlisthash
+    . sort
+    . map keyInt
+    . IS.toList
+    $ biggestSet

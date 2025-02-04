@@ -36,6 +36,7 @@ import qualified BSArray as BSA
 import Data.Foldable (foldl')
 import Data.Char (ord)
 import Data.Function.Memoize 
+import qualified Data.MemoTrie as MT 
 
 example :: ByteString
 example =

@@ -1,8 +1,6 @@
 {-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use tuple-section" #-}
-{-# OPTIONS_GHC -Wno-unused-imports #-}
 
 module Algorithms (aStar, Distance (..), distify, djikstra, paths, fromDist) where
 
@@ -11,10 +9,9 @@ import qualified Data.IntPSQ as PSQ
 import Data.IntMap.Strict as IM
 import Data.List (foldl')
 import Data.Maybe (fromMaybe, fromJust)
-import Control.DeepSeq (deepseq, NFData (rnf))
+import Control.DeepSeq (NFData (rnf))
 
 import Debug.Trace (trace)
-import Data.Graph.Inductive (neighbors, gmap)
 
 data Distance = Distance Int | Infinity deriving (Eq, Show)
 
@@ -61,7 +58,7 @@ trace'  s= if istrace then trace s else id
 -- > sourcenode targetnode nn
 --
 djikstra :: Key -> Key -> (Node -> [(Node, Dist)]) -> (GMap, PrevMap)
-djikstra source target nf = djikstra' target (PSQ.singleton source 0 0) (IM.singleton source 0) IM.empty nf
+djikstra source target = djikstra' target (PSQ.singleton source 0 0) (IM.singleton source 0) IM.empty
 
 
 djikstra' :: Key -> DQ -> GMap ->  PrevMap -> (Node -> [(Node, Dist)]) -> (GMap, PrevMap )

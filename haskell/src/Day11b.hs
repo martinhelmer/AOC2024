@@ -3,6 +3,7 @@
 {-# OPTIONS_GHC -Wno-unused-imports #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# LANGUAGE MagicHash #-}
+{-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
 module Day11b (runme, runex) where
 
@@ -29,6 +30,7 @@ import AOCHelper (readInpByteSTring, Pos, Dir, tp)
 import qualified BSArray as BSA
 import Data.Maybe (mapMaybe)
 import qualified GHC.Integer.Logarithms as L
+import qualified Data.MemoTrie as MT
 
 example :: ByteString
 example =
@@ -60,45 +62,30 @@ runme =
 
 ---
 
-q :: Int -> String 
-q n | n == 2  = "A"
-q _ = "B"
+blink :: Int -> Int -> Int
+blink = MT.memo2 blink'
 
-blink1 :: Int -> [Int]
-blink1 0 = [1] 
-blink1 n = case l `quotRem` 2 of 
-            (w,0) -> let (r,l) = n `quotRem` (10 ^ w) in [r,l]
-            _ -> [n * 2024]
-    where l = 1 + floor (logBase 10 (fromIntegral n))
-
-
-blink1' ::[(Int, Integer)] -> [(Int, Integer)]
-blink1' [] = []
-blink1' ((x,n):xs)  | x == 0 = (1,n) : blink1' xs
-                    | even l = (x `div` 10 ^ (l `div` 2),n):(x `mod` 10 ^ (l `div` 2),n):blink1' xs
-                    | otherwise =  (x * 2024,n): blink1' xs
-        where len':: Int -> Int 
-              len' n =  (1 +  I# (L.integerLogBase# 10 (toInteger n))) :: Int --1 +  floor (logBase 10 (fromIntegral n))::Int
-              l = len' x 
- 
-
-blink :: IM.IntMap Integer -> IM.IntMap Integer
-blink  = IM.fromListWith (+) . blink1' . IM.toList
-
-blinkTwice :: IM.IntMap Integer -> IM.IntMap Integer
-blinkTwice  = IM.fromListWith (+) . blink1' . blink1' . IM.toList
+blink' :: Int -> Int  -> Int
+blink' 0 _ = 1
+blink' depth 0 = blink (depth -1) 1
+blink' depth n= case ll `quotRem` (2::Int) of
+            (w,0) -> let (r,l) = n `quotRem` (10 ^ w) 
+                    in if depth == 1 then 2 else blink (depth -1) r + blink (depth- 1) l
+            _ -> if depth == 1 then 1 else blink  (depth -1) (n * 2024)
+    where len':: Int -> Int 
+          len' n =  (1 +  I# (L.integerLogBase# 10 (toInteger n))) :: Int --1 +  floor (logBase 10 (fromIntegral n))::Int
+          ll = len' n 
 
 -- ugly parse. 
-parse :: ByteString -> [(Int,Integer)]
-parse = map (\t -> (fst t,1)) . mapMaybe BS.readInt . BS.splitWith (== ' ')
+parse :: ByteString -> [Int]
+parse = map fst . mapMaybe BS.readInt . BS.splitWith (== ' ')
 ---
 
-go :: Int -> [(IM.Key, Integer)] -> Integer
-go n l = sum $  IM.elems $ if even n then m1 else blink m1
-    where m1 = iterate blinkTwice (IM.fromList l) !! max 0 (n `div` 2)
+go :: Int -> [Int] -> Integer
+go n l = toInteger . sum $ map (blink n)  l
 
 part1 :: ByteString -> IO Integer
-part1  = return . toInteger . go 25 . parse
+part1  = return  . go 25 . parse
 
 part2 :: ByteString -> IO Integer
-part2  = return . toInteger . go 75 . parse
+part2  = return . go 75 . parse

@@ -6,6 +6,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
 {-# LANGUAGE BangPatterns #-}
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
 
 module Day20 (runme, runex) where
 
@@ -96,7 +97,7 @@ circle :: Int -> [(Int, Int)]
 circle r = [(x,y) | x <- [-r..r] , y <- [-r..r] , let d = (abs x + abs y) in (d >= 2) && (d <= r) ]
 
 cheats :: Int -> M.Map Loc Int -> Loc -> [Int]
-cheats d m l = let !ll = mapMaybe (cheat m l) $ map (l .+.) (circle d) in ll
+cheats d m l = let !ll = mapMaybe (cheat m l . (l .+.)) (circle d) in ll
 
 cheat m here d = let dst = (fromMaybe 0 ((-) <$> M.lookup d m <*> M.lookup here m) - mhdist here d) in if dst > 0 then Just dst else Nothing
 
@@ -107,7 +108,7 @@ part1 s =  do
      let sp = fromMaybe (error "S does not exist") $ BSA.elemIndex bsa 'S'
      let ep = fromMaybe (error "E does not exist") $ BSA.elemIndex bsa 'E'
      let mymap = M.fromList $ zip  (walk bsa sp sp ep) [0..]
-     let mycheats = concat $ map (cheats 2 mymap) $ M.keys mymap
+     let mycheats = concatMap (cheats 2 mymap) (M.keys mymap)
      return (toInteger . length . filter (>=100) $ mycheats )
 
 part2 :: ByteString -> IO Integer

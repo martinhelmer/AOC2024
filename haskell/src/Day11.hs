@@ -1,30 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# OPTIONS_GHC -Wno-unused-imports #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 module Day11 (runme, runex) where
 
 import Text.RawString.QQ
 import qualified Data.IntMap.Strict as IM
-import Control.Applicative
-import qualified Data.Attoparsec.ByteString.Char8 as AP
-import Data.Attoparsec.ByteString.Char8 (
-  Parser,
-  decimal,
-  endOfInput,
-  endOfLine,
-  isDigit,
-  many1,
-  parseOnly,
-  skipSpace,
-  skipWhile,
- )
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as BS
 import RunUtil (RunMe, runMeByteString)
-import AOCHelper (readInpByteSTring, Pos, Dir, tp)
-import qualified BSArray as BSA
+import AOCHelper (readInpByteSTring)
 import Data.Maybe (mapMaybe)
 
 example :: ByteString
@@ -48,7 +33,7 @@ runex =
 runme :: RunMe
 runme =
   runMeByteString
-    "--- Day 11: Plutonian Pebbles"
+    "-- Day 11: Plutonian Pebbles"
     (readInpByteSTring "day11.txt")
     part1
     (Just 199986)
@@ -57,7 +42,7 @@ runme =
 
 ---
 
-blink1' :: Integral a => [(a, b)] -> [(a, b)]
+blink1' :: [(Int, Int)] -> [(Int, Int)]
 blink1' [] = []
 blink1' ((x,n):xs)  | x == 0 = (1,n) : blink1' xs
                     | x <= 9 = (x * 2024,n): blink1' xs
@@ -74,6 +59,7 @@ blink1' ((x,n):xs)  | x == 0 = (1,n) : blink1' xs
                     | x <= 999999999999 = (x `div` 1000000,n):(x `mod` 1000000,n):blink1' xs
                     | otherwise = undefined
 
+
 blink :: IM.IntMap Int -> IM.IntMap Int
 blink  = IM.fromListWith (+) . blink1' . IM.toList
 
@@ -85,12 +71,13 @@ parse :: ByteString -> [(Int,Int)]
 parse = map (\t -> (fst t,1)) . mapMaybe BS.readInt . BS.splitWith (== ' ')
 ---
 
-go :: Int -> [(IM.Key, Int)] -> Int
-go n l = sum $  IM.elems $ if even n then m1 else blink m1
+go n l =  if even n then m1 else blink m1
     where m1 = iterate blinkTwice (IM.fromList l) !! max 0 (n `div` 2)
 
 part1 :: ByteString -> IO Integer
-part1  =  return . toInteger . go 25 . parse
+part1  s = do 
+  let g = go 25 . parse $ s
+  return . toInteger . sum . IM.elems $ g 
 
 part2 :: ByteString -> IO Integer
-part2  = return . toInteger . go 75 . parse
+part2  s = return . toInteger . sum. IM.elems $ go 75 $ parse s

@@ -2,7 +2,6 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns -Wunused-top-binds #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
-{-# OPTIONS_GHC -Wno-unused-imports #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
 
@@ -10,35 +9,15 @@ module Day16 (runme, runex) where
 
 import Text.RawString.QQ
 
-import Control.Applicative
-import qualified Data.Attoparsec.ByteString.Char8 as AP
-import Data.Attoparsec.ByteString.Char8 (
-  Parser,
-  decimal,
-  endOfInput,
-  endOfLine,
-  isDigit,
-  many1,
-  parseOnly,
-  skipSpace,
-  skipWhile,
- )
 import Data.ByteString (ByteString)
-import qualified Data.ByteString.Char8 as BS
 
-import PosDir ( Pos(..), Dir(..), cardinalDirections, pdir,loc, opposite, (.->.), Loc, step, rl, rr )
+import PosDir ( Pos(..), Dir(..), pdir,loc, (.->.), step, rl, rr, Loc )
 import RunUtil (RunMe, runMeByteString)
-import AOCHelper (readInpByteSTring, tp)
+import AOCHelper (readInpByteSTring)
 import Algorithms (aStar, djikstra, paths, fromDist)
 import qualified BSArray as BSA
 import Data.Maybe (fromJust)
-import Data.List ((\\))
-import Data.Set (Set)
-import qualified Data.Set as S
-import Data.Foldable (foldl')
-import BSArray (rows, cols, BSArray)
-import Debug.Trace (trace)
-import qualified Data.IntMap as IM
+import BSArray (BSArray)
 import Data.Containers.ListUtils (nubOrd)
 import qualified Data.Bifunctor
 
@@ -119,13 +98,17 @@ nextnodes detailed grid p
 nn :: Bool -> BSArray -> Int -> [(Int, Score)]
 nn d grid key = map (Data.Bifunctor.first (pos2key grid)) $ nextnodes d grid (key2pos grid key)
 
+pos2key :: BSArray -> Pos -> Int
 pos2key bs (Pos l d) = (BSA.rawIndex bs l )  * 4 + fromEnum d
 
+key2pos :: BSArray -> Int -> Pos
 key2pos bs key = let (ix, d) = key `divMod` 4  in Pos (BSA.rawIndex2Index bs ix) (toEnum d)
 
+isEndnode :: BSArray -> Int -> Bool
 isEndnode grid p = let el = fromJust . BSA.elemIndex grid $ 'E'
-                       (Pos l d) = key2pos grid p in l == el
+                       (Pos l _) = key2pos grid p in l == el
 
+key2l :: BSArray -> Int -> PosDir.Loc
 key2l grid k =let (Pos l _) = key2pos grid k in l
 
 part1 :: ByteString -> IO Integer
@@ -144,10 +127,7 @@ part2 s = do
     let endkey = pos2key grid $ Pos (fromJust . BSA.elemIndex grid $ 'E') NORTH
     let skey = (pos2key grid sp)
     let (_,p)  = (djikstra skey (-1)  (nn False grid))
-    -- print ( filter (\w -> endkey == (fst w)) (IM.toList p) )
-    -- print p
-    -- print( map (\k -> IM.lookup k d) [1124,1125])
     let pths =  paths skey endkey p
-    let ls = map (\key -> steps grid (key2pos grid key)) (nubOrd . concat $ pths)
+    let ls = map (steps grid . key2pos grid) (nubOrd . concat $ pths)
     let crosses = map (key2l grid)   (nubOrd . concat $ pths)
     return . toInteger $ (sum ls - (length crosses - length (nubOrd crosses)))

@@ -76,7 +76,10 @@ Button B: X+27, Y+71
 Prize: X=18641, Y=10279
 |]
 
+p :: p -> ByteString -> ByteString -> (ByteString, ByteString)
 p b = BS.breakSubstring
+
+solve :: (Eq b, Fractional b) => (b, b, b) -> (b, b, b) -> Maybe (b, b)
 solve (a1, b1, c1) (a2, b2, c2) = case ds of 
                 0 -> Nothing
                 _ -> Just (d1 / ds, d2 / ds)
